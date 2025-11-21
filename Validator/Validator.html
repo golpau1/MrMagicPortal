@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storm Operators Manual</title>
+  <style>
+    @font-face{
+      font-family:'VCR OSD Mono';
+      src:url('../Assets/VCR_OSD_MONO_1.001.ttf') format('truetype');
+      font-weight:normal;
+      font-style:normal;
+      font-display:swap;
+    }
+    body{margin:0;font-family:'VCR OSD Mono', monospace;background:#fafafa;color:#111}
+    .back-btn{position:fixed;top:12px;left:12px;z-index:60;display:inline-block;background:#fafafa;border:1px solid #e5e5e5;padding:6px 10px;border-radius:6px;color:#111;text-decoration:none;font-weight:600;font-size:14px;line-height:1.2;min-width:74px;width:74px;text-align:center;box-shadow:none;font-family:'VCR OSD Mono', monospace;box-sizing:border-box}
+    .back-btn:active{transform:translateY(1px)}
+    .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0 24px}
+    .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
+    .manual-viewer__frame{border:1px solid #d8d8d8;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);overflow:hidden;background:#fff}
+    .manual-viewer__frame object{display:block;width:100%;height:1500px}
+    @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
+    @media (max-width: 600px){ .manual-viewer__frame object{height:920px} }
+  </style>
+</head>
+<body>
+  <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../Portal%20Page/MrMagic.html';}})();</script>
+  <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
+  <section class="manual-viewer" aria-label="Storm Operators Manual">
+    <h2 class="manual-viewer__title">Validator</h2>
+    <div class="manual-viewer__frame">
+      <object data="../Assets/Storm%20Nayax%20Validator%2006.pdf#view=FitH" type="application/pdf">
+        <p>Cannot display PDF. <a href="../Assets/Storm%20Nayax%20Validator%2006.pdf">Open manual.</a></p>
+      </object>
+    </div>
+  </section>
+</body>
+</html>

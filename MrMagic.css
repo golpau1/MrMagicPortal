@@ -1,0 +1,259 @@
+/* ---------- Base ---------- */
+:root{
+  --bg: #ffffff;              /* pure white background */
+  --card: #ffffff;
+  --text: #003448;
+  --muted: #003448;
+  --line: #e9edf7;
+  --primary: #3b6ef6;         /* button color close to reference */
+  --primary-press: #2f59c8;
+  --radius: 14px;
+  --shadow: 0 8px 28px rgba(23, 41, 89, 0.08);
+  --focus: 0 0 0 3px rgba(59, 110, 246, 0.25);
+}
+
+/* Load local VCR OSD Mono font */
+@font-face{
+  font-family: 'VCR_OSD_MONO';
+  src: url('../Assets/VCR_OSD_MONO_1.001.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  /* Restored previous font for the MR Magic login page */
+  font-family: 'Courier New', monospace;
+  color: var(--text);
+  background: var(--bg);
+  font-weight: 300; /* lighter base weight */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Screen reader only text */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Layout ---------- */
+.page{
+  min-height: 100vh; /* ensure vertical centering on viewport */
+  display: grid;
+  place-items: center;
+  padding: 40px 16px;
+}
+
+/* logo removed: styles deleted to remove blue pill above login */
+
+/* ---------- Card ---------- */
+.card{
+  width: 100%;
+  max-width: 480px;
+  background: var(--card);
+  border-radius: var(--radius);
+  box-shadow: none; /* removed drop shadow as requested */
+  padding: 36px 32px 28px;
+}
+
+.card__header{
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.card__title{
+  margin: 0 0 6px;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 600; /* medium thickness title */
+  letter-spacing: 0.2px;
+}
+
+.card__title--line1{ display: block; }
+.card__title--line1{
+  font-family: 'Anton', sans-serif;
+}
+.card__title--line2{
+  display: block;
+  font-size: 18px;
+  margin-top: 6px;
+  font-weight: 300; /* light weight for 'Portal' */
+  color: var(--text);
+}
+
+.card__subtitle{
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Small brand subtitle under the title */
+.brand-subtitle{
+  font-family: 'Jura', sans-serif;
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.card__footer{
+  margin: 18px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- Form ---------- */
+.form{
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+/* Error message shown when authentication fails */
+.form__error{
+  color: #d9534f; /* red */
+  font-size: 13px;
+  margin-top: 6px;
+  text-align: center;
+}
+.form__error[hidden]{
+  display: none;
+}
+.form__error.is-visible{
+  animation: pop .16s ease;
+}
+
+@keyframes pop{
+  from { transform: translateY(-4px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
+.field{
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  align-items: center;
+  background: #fbfcff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 12px 0 10px;
+}
+
+/* Small brand icon above the login card */
+/* .brand-icon removed; no styles needed now. */
+
+.field:focus-within{
+  box-shadow: var(--focus);
+  border-color: #cdd7fb;
+  background: #fff;
+}
+
+.field__icon{
+  display: grid;
+  place-items: center;
+  color: #8ea0c8;
+}
+
+.field__icon svg{
+  width: 18px;
+  height: 18px;
+}
+
+.field__input{
+  border: 0;
+  outline: none;
+  height: 46px;
+  padding: 0 36px 0 2px;
+  font-size: 15px;
+  background: transparent;
+  color: var(--text);
+  font-weight: 300;
+  font-family: 'VCR_OSD_MONO', monospace;
+}
+
+.field__input::placeholder{
+  color: #a5b1c9;
+}
+
+.field__input-wrapper{
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle{
+  position: absolute;
+  right: 4px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+}
+
+.password-toggle svg{
+  width: 20px;
+  height: 20px;
+}
+
+/* ---------- Button ---------- */
+.button{
+  appearance: none;
+  border: 0;
+  width: 60%;
+  max-width: 260px;
+  min-width: 180px;
+  height: 48px;
+  border-radius: 10px;
+  background: #003448;
+  color: #fff;
+  font-weight: 500; /* slightly lighter button text */
+  font-size: 15px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(0, 52, 72, 0.35);
+  transition: transform .02s ease, background .15s ease;
+  margin: 6px auto 0;
+  font-family: 'VCR_OSD_MONO', monospace;
+}
+
+.button:hover{
+  background: #002a39;
+}
+
+.button:active{
+  background: #002433;
+  transform: translateY(1px);
+}
+
+.link{
+  color: var(--primary);
+  text-decoration: none;
+}
+.link:hover{
+  text-decoration: underline;
+}
+
+/* ---------- Small screens ---------- */
+@media (max-width: 380px){
+  .card{ padding: 28px 20px 22px; }
+  .card__title{ font-size: 24px; }
+  .button{ width: 100%; max-width: none; min-width: 0; }
+}

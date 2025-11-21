@@ -1,0 +1,174 @@
+body {
+  background: white;
+  color: black;
+  font-family: 'VCR_OSD_MONO', monospace;
+  padding: 40px;
+  line-height: 1.5;
+}
+
+/* Load local VCR OSD Mono font for homepage */
+@font-face{
+  font-family: 'VCR_OSD_MONO';
+  src: url('../Assets/VCR_OSD_MONO_1.001.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Header layout when an inline icon is present */
+.header-row{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+h1 {
+  color: #000000; /* changed to black */
+  font-size: 20px;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.desc {
+  color: #222;
+  font-size: 14px;
+  margin-bottom: 30px;
+}
+
+.context-nav {
+  margin-bottom: 30px;
+}
+
+.context-nav a {
+  font-weight: bold;
+  margin-right: 10px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.context { color: black; border: 1px solid black; padding: 2px 5px; }
+.object { color: red; }
+.subject { color: blue; }
+.project { color: green; }
+
+.projects h2 {
+  color: red;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+/* Remove native list counter; we inject zero-padded numbers manually in JS */
+ol {
+  list-style: none;
+  padding-left: 0;
+  margin-left: 0;
+}
+
+
+ol a {
+  text-decoration: none;
+  color: blue;
+}
+
+/* Make entire list item (number + title) a larger hover target */
+li .guide-num { display:inline-block; min-width:46px; }
+li { cursor:pointer; }
+li:hover a { text-decoration: underline; }
+
+/* Highlight active preview item */
+/* Remove previously used active background highlight */
+li.active { background: transparent; }
+
+ol a:hover {
+  text-decoration: underline;
+}
+
+/* Preview image shown when hovering GETTING STARTED */
+.preview{
+  display: none; /* hidden by default; shown via .visible class */
+  position: absolute;
+  width: 340px;
+  max-width: 40vw;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  border: 1px solid #e6e6e6;
+  background: #fff;
+  padding: 6px;
+  z-index: 9999;
+}
+.preview.visible{
+  display: block;
+}
+
+/* Centered variant - place preview in middle of viewport */
+.preview.centered{
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+}
+.preview img{
+  display: block;
+  width: auto;           /* allow image to keep its aspect ratio */
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto;
+}
+
+/* Mobile: inline preview and collapsed list behaviour */
+@media (max-width: 600px) {
+  /* Inline preview: keep it compact (max-height) and let list items flow below it */
+  .preview{
+    position: static;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 8px 0;
+    box-shadow: none;
+    border: 0;
+    padding: 6px 0;
+    max-height: 0; /* collapsed by default */
+    overflow: hidden;
+    transition: max-height .28s ease;
+  }
+  /* When visible inline, give it a reasonable maximum height so it doesn't fill the page */
+  .preview.visible.inline{
+    max-height: 40vh; /* image container will be constrained to this height on mobile */
+  }
+
+  /* When preview is centered on larger screens, ensure it fits in the viewport */
+  @media (min-width: 601px) {
+    .preview.visible.centered img{
+      max-width: 80vw;
+      max-height: 80vh;
+      width: auto;
+    }
+  }
+}
+
+
+footer {
+  margin-top: 50px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+footer .links a {
+  margin-right: 15px;
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.bio { color: green; }
+.cv { color: black; }
+.insta { color: red; }
+.contact { color: blue; }
+
+.side {
+  color: green;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Optional geometric symbols */
+/* Removed decorative geometric symbols previously injected at page bottom */

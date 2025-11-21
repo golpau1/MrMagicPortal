@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Manuals</title>
+  <link rel="stylesheet" href="homepage.css">
+</head>
+  <body>
+  <header class="page-header">
+    <div class="header-row">
+      <h1>Manuel Index</h1>
+    </div>
+    <p class="desc">This page provides access to all manuals and guides for users.<br>
+      Select a manual below to view or download.</p>
+  </header>
+
+  <!-- Navigation removed -->
+
+  <section class="projects">
+    <ol id="guideList"><li>Loading guides…</li></ol>
+  </section>
+  <!-- Footer links removed -->
+
+  <!-- Image preview container (shown when hovering GETTING STARTED) -->
+  <div id="preview" class="preview" aria-hidden="true" hidden>
+    <img id="previewImg" src="" alt="" aria-hidden="true">
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // Auth token guard
+      const token = sessionStorage.getItem('authToken');
+  if(!token){ console.warn('[GUIDES] No auth token; redirecting to login'); window.location.href = (location.protocol === 'file:' ? '../index.html' : '/index.html'); return; }
+
+      // Static guides list (locked to two options)
+      const GUIDES = [
+        { title: 'Storm', slug: '../Storm/Storm.html' },
+        { title: 'Hurricane', slug: '../Hurricane/Hurricane.html' },
+        { title: 'Smart Wash', slug: '../Smart%20Wash/Smartwash.html' },
+        { title: 'Validator', slug: '../Validator/Validator.html' }
+      ];
+
+      function buildList(items){
+        console.log('[GUIDES] Building list with', items.length, 'items');
+        const ol = document.getElementById('guideList');
+        ol.innerHTML = '';
+        if(!items.length){
+          ol.innerHTML = '<li>No guides available for your account.</li>';
+          return;
+        }
+        items.forEach((g,i) => {
+            const li = document.createElement('li');
+            const num = String(i+1).padStart(2,'0') + '. ';
+            const a = document.createElement('a');
+            a.textContent = g.title.toUpperCase();
+            a.href = g.slug;
+            a.className = 'preview-link';
+            // Preview image mapping for the two static guides
+            const previewMap = {
+              'Storm':'../Assets/Screenshot%202025-11-19%20at%202.19.29%E2%80%AFpm.png',
+              'Hurricane':'../Assets/Screenshot%202025-11-19%20at%202.18.36%E2%80%AFpm.png',
+              'Smart Wash':'../Assets/Screenshot%202025-11-19%20at%202.18.56%E2%80%AFpm.png',
+              'Validator':'../Assets/Screenshot%202025-11-19%20at%202.19.10%E2%80%AFpm.png'
+            };
+            if(previewMap[g.title]) {
+              a.dataset.preview = previewMap[g.title];
+              // Immediate hover / focus handlers for any guide with a preview image
+              const enterHandler = () => { if(!isMobile()) { showCentered(a.dataset.preview, g.title); li.classList.add('active'); } };
+              const leaveHandler = () => { if(!isMobile()) { hidePreview(); li.classList.remove('active'); } };
+              a.addEventListener('mouseenter', enterHandler);
+              a.addEventListener('mouseleave', leaveHandler);
+              a.addEventListener('focus', enterHandler);
+              a.addEventListener('blur', leaveHandler);
+            }
+            // prepend manual number span (styled for spacing)
+            const numSpan = document.createElement('span');
+            numSpan.className = 'guide-num';
+            numSpan.textContent = num;
+            li.appendChild(numSpan);
+            li.appendChild(a);
+            ol.appendChild(li);
+        });
+        wirePreviewLinks();
+        console.log('[PREVIEW] Wiring complete');
+      }
+
+      // Always render the two static guides, regardless of backend
+      buildList(GUIDES);
+      const links = document.querySelectorAll('.preview-link');
+      const preview = document.getElementById('preview');
+      const previewImg = document.getElementById('previewImg');
+      const projects = document.querySelector('.projects');
+      let activeLink = null; // track which link controls the current mobile inline preview
+      let openScrollY = null; // remember scroll position when mobile preview opens
+
+      // Removed early return that blocked defining preview functions when list not yet built.
+      if (!preview || !projects || !previewImg) {
+        console.error('[PREVIEW] Essential preview elements missing');
+      }
+
+      // Helper to detect mobile viewport
+      const isMobile = () => window.matchMedia('(max-width:600px)').matches;
+
+      // Ensure preview exists in the document (it will be moved when needed)
+      document.body.appendChild(preview);
+
+      function showCentered(src, alt){
+        console.log('[PREVIEW] showCentered src=', src);
+        // make sure preview is a child of body for absolute positioning
+        if (preview.parentNode !== document.body) document.body.appendChild(preview);
+        previewImg.src = src;
+        previewImg.alt = alt || '';
+        previewImg.removeAttribute('aria-hidden');
+        preview.classList.remove('inline');
+        preview.classList.add('visible','centered');
+        preview.removeAttribute('hidden');
+        preview.setAttribute('aria-hidden','false');
+      }
+
+  function showInline(src, alt, li, link){
+    console.log('[PREVIEW] showInline src=', src);
+        // insert the preview after the list item
+        preview.classList.remove('centered');
+        preview.classList.add('inline');
+        preview.removeAttribute('hidden');
+        preview.setAttribute('aria-hidden','false');
+        // move preview element to right position in the list
+        li.parentNode.insertBefore(preview, li.nextSibling);
+        // prepare container for new image, reset height so transition runs
+        preview.style.maxHeight = '0px';
+
+        // set the src after inserting so layout can account for image load
+  previewImg.src = src;
+  previewImg.alt = alt || '';
+  previewImg.removeAttribute('aria-hidden');
+  // remember which link this preview belongs to (for mobile image tap navigation)
+  activeLink = link || null;
+  // capture scroll position at open time so we can allow modest scrolling
+  openScrollY = window.scrollY;
+
+        // mark active (keep other items visible; they will sit below the preview)
+        document.querySelectorAll('.projects ol li').forEach(l => l.classList.remove('active'));
+        li.classList.add('active');
+
+        // When the image loads (or is already cached), measure displayed height and expand preview
+        const onLoad = function(){
+          try {
+            const cap = Math.round(window.innerHeight * 0.8);
+            const displayedHeight = previewImg.naturalHeight || previewImg.height || Math.round(window.innerHeight * 0.4);
+            const desired = Math.min(displayedHeight, cap);
+            preview.style.maxHeight = (desired + 8) + 'px';
+            preview.classList.add('visible');
+            setTimeout(() => { try { preview.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch(e){} }, 80);
+          } catch(e) {
+            preview.style.maxHeight = '';
+            preview.classList.add('visible');
+          } finally {
+            previewImg.removeEventListener('load', onLoad);
+          }
+        };
+
+        // If image already cached, load event may have fired — handle it immediately
+        if (previewImg.complete && previewImg.naturalHeight) {
+          // call onLoad asynchronously to allow DOM updates
+          setTimeout(onLoad, 20);
+        } else {
+          previewImg.addEventListener('load', onLoad);
+        }
+      }
+
+  function hidePreview(){
+    console.log('[PREVIEW] hidePreview');
+        // remove inline/centered classes and hide
+        preview.classList.remove('visible','inline','centered');
+        preview.setAttribute('aria-hidden','true');
+        preview.setAttribute('hidden','');
+  previewImg.src = '';
+  previewImg.alt = '';
+  previewImg.setAttribute('aria-hidden','true');
+        // remove any active marker
+        document.querySelectorAll('.projects ol li').forEach(l => l.classList.remove('active'));
+        // ensure the preview is back as a child of body for future centered positioning
+        if (preview.parentNode !== document.body) document.body.appendChild(preview);
+        activeLink = null;
+        openScrollY = null;
+      }
+
+      // Event delegation after dynamic load: re-query links when needed
+      function wirePreviewLinks(){
+        const links = document.querySelectorAll('.preview-link');
+        console.log('[PREVIEW] Found links:', links.length);
+        links.forEach(link => {
+          const src = link.dataset.preview;
+          const alt = '';
+          if (!src) return;
+          const li = link.closest('li');
+          if(li){ li.dataset.preview = src; }
+          // Desktop hover over entire li
+          if(li){
+            li.addEventListener('mouseenter', () => { if(!isMobile()) showCentered(src, alt); });
+            li.addEventListener('mouseleave', () => { if(!isMobile()) hidePreview(); });
+          } else {
+            link.addEventListener('pointerenter', () => { if (!isMobile()) showCentered(src, alt); });
+            link.addEventListener('pointerleave', () => { if (!isMobile()) hidePreview(); });
+          }
+          link.addEventListener('focus', () => { if (!isMobile()) showCentered(src, alt); });
+          link.addEventListener('blur', () => { if (!isMobile()) hidePreview(); });
+          // Mobile tap logic
+          // Mobile tap logic (first tap shows preview, second tap navigates)
+          link.addEventListener('click', (e) => {
+            if (!isMobile()) return; // desktop: allow normal navigation
+            const liEl = link.closest('li');
+            const alreadyActive = activeLink === link && liEl && liEl.classList.contains('active');
+            if (!alreadyActive) {
+              // First tap: show preview inline, prevent navigation
+              e.preventDefault();
+              showInline(src, alt, liEl, link);
+            } else {
+              // Second tap on same link: allow navigation (no preventDefault)
+            }
+          });
+        });
+      }
+  // If fetch fails early (e.g., server down), attempt wiring any static links
+  // (When fetch succeeds, wirePreviewLinks runs immediately after population.)
+  setTimeout(() => { if(!document.querySelector('.preview-link')) return; wirePreviewLinks(); }, 500);
+
+      // On mobile, tapping the preview image should navigate to the active link
+      previewImg.addEventListener('click', (e) => {
+        if (!activeLink) return;
+        if (!window.matchMedia('(max-width:600px)').matches) return;
+        try { window.location.href = activeLink.href; } catch(err){}
+      });
+
+      // Do NOT auto-hide on scroll or resize; only a second click on the same link hides it.
+      // (If you want resize to hide it later, re-add: window.addEventListener('resize', hidePreview))
+    });
+  </script>
+</body>
+</html>
