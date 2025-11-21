@@ -58,7 +58,8 @@
           const passwordInput = document.getElementById('password');
           const togglePassword = document.getElementById('togglePassword');
           const eyeSlash = document.getElementById('eyeSlash');
-          const redirectPath = location.protocol === 'file:' ? 'Homepage/homepage.html' : '/Homepage/homepage.html';
+          // Always use project-relative path so it works locally and online
+          const redirectPath = 'Homepage/homepage.html';
           const PASSWORD = 'spotfree1';
 
           // Initial state: password hidden, plain eye (no slash)
