@@ -50,6 +50,7 @@ h1 {
   top:12px;
   left:12px;
   z-index:60;
+  font-family:'VCR OSD Mono', monospace;
 }
 .back-btn:active { transform:translateY(1px); }
 
