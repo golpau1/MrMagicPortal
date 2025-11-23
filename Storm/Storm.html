@@ -19,6 +19,8 @@
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
     .manual-viewer__frame{border:1px solid #d8d8d8;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);background:#fff}
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
+    /* pdf.js page canvas styling */
+    #pdfPages canvas{display:block;margin:0 auto 24px;max-width:100%;width:100%;background:#fff;border:1px solid #e1e1e1;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
     /* Mobile: turn frame into scroll container with full viewport height for thumb scrolling */
     @media (max-width: 600px){
@@ -33,10 +35,56 @@
   <section class="manual-viewer" aria-label="Storm Operators Manual">
     <h2 class="manual-viewer__title">Storm</h2>
     <div class="manual-viewer__frame">
-      <object data="../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf#view=FitH" type="application/pdf">
+      <!-- Fallback object (desktop native viewer); hidden on small screens when pdf.js loads -->
+      <object id="pdfObjectFallback" data="../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf#view=FitH" type="application/pdf">
         <p>Cannot display PDF. <a href="../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf">Open manual.</a></p>
       </object>
+      <div id="pdfPages" aria-label="Storm manual full pages" style="display:none;"></div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js" integrity="sha512-WyQnD6G7QqB0uQMnFZqre1H+X1vEZh1MZkJX2uKJQ7npCwQSoE3o1XX6Yw1sqn/w1JvNeh5AO2gdhukwSzpUdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function(){
+        const pdfUrl = '../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf';
+        const pagesContainer = document.getElementById('pdfPages');
+        const fallbackObj = document.getElementById('pdfObjectFallback');
+        // Only switch to pdf.js on small screens (mobile) to address single-page issue
+        const usePdfJs = window.matchMedia('(max-width: 600px)').matches;
+        if(!usePdfJs || !window['pdfjsLib']){ return; }
+        // Hide fallback native viewer
+        if(fallbackObj) fallbackObj.style.display = 'none';
+        pagesContainer.style.display = 'block';
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
+          let currentPage = 1;
+          const total = doc.numPages;
+          const loadNext = () => {
+            if(currentPage > total) return;
+            const pageNum = currentPage++;
+            doc.getPage(pageNum).then(page => {
+              const viewport = page.getViewport({ scale: 1.1 });
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = viewport.width;
+              canvas.height = viewport.height;
+              pagesContainer.appendChild(canvas);
+              page.render({ canvasContext: ctx, viewport }).promise.then(()=>{
+                // Lazy-load trigger: when near bottom, load next page
+                if(pageNum < total){
+                  // Immediate load next to keep simple; could defer to IntersectionObserver
+                  loadNext();
+                }
+              });
+            });
+          };
+          loadNext();
+        }).catch(err => {
+          console.error('[PDFJS] Failed to render:', err);
+          // Show fallback if pdf.js fails
+          if(fallbackObj) fallbackObj.style.display = 'block';
+          pagesContainer.style.display = 'none';
+        });
+      })();
+    </script>
   </section>
 </body>
 </html>
