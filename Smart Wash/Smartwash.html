@@ -19,6 +19,8 @@
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
     .manual-viewer__frame{border:1px solid #d8d8d8;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);background:#fff}
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
+    #pdfPages{padding:16px 0;}
+    #pdfPages canvas{display:block;margin:0 auto 24px;max-width:100%;width:auto;background:#fff;border:1px solid #e1e1e1;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
@@ -32,10 +34,38 @@
   <section class="manual-viewer" aria-label="Smart Wash Operator Manual">
     <h2 class="manual-viewer__title">Smart Wash</h2>
     <div class="manual-viewer__frame">
-      <object data="../Assets/Smart%20Wash%20Operator%20Manual.pdf#view=FitH" type="application/pdf">
+      <object id="pdfObjectFallback" data="../Assets/Smart%20Wash%20Operator%20Manual.pdf#view=FitH" type="application/pdf">
         <p>Cannot display PDF. <a href="../Assets/Smart%20Wash%20Operator%20Manual.pdf">Open manual.</a></p>
       </object>
+      <div id="pdfPages" aria-label="Smart Wash manual full pages" style="display:none;"></div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js" integrity="sha512-WyQnD6G7QqB0uQMnFZqre1H+X1vEZh1MZkJX2uKJQ7npCwQSoE3o1XX6Yw1sqn/w1JvNeh5AO2gdhukwSzpUdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function(){
+        const pdfUrl = '../Assets/Smart%20Wash%20Operator%20Manual.pdf';
+        const pagesContainer = document.getElementById('pdfPages');
+        const fallbackObj = document.getElementById('pdfObjectFallback');
+        const usePdfJs = window.matchMedia('(max-width: 600px)').matches;
+        if(!usePdfJs || !window['pdfjsLib']) return;
+        if(fallbackObj) fallbackObj.style.display='none';
+        pagesContainer.style.display='block';
+        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+        pdfjsLib.getDocument(pdfUrl).promise.then(doc=>{
+          let currentPage=1; const total=doc.numPages; const frame=document.querySelector('.manual-viewer__frame');
+          const loadNext=()=>{ if(currentPage>total) return; const pageNum=currentPage++; doc.getPage(pageNum).then(page=>{
+            const baseViewport=page.getViewport({scale:1});
+            const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
+            let scale=availWidth/baseViewport.width; if(scale>1.2) scale=1.2; if(scale<1) scale=1;
+            const viewport=page.getViewport({scale});
+            const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
+            canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
+            pagesContainer.appendChild(canvas);
+            page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ if(pageNum<total) loadNext(); });
+          });};
+          loadNext();
+        }).catch(err=>{ console.error('[PDFJS] Smart Wash render fail',err); if(fallbackObj) fallbackObj.style.display='block'; pagesContainer.style.display='none'; });
+      })();
+    </script>
   </section>
 </body>
 </html>
