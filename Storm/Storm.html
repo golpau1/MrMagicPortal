@@ -17,10 +17,14 @@
     .back-btn:active{transform:translateY(1px)}
     .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0 24px}
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
-    .manual-viewer__frame{border:1px solid #d8d8d8;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);overflow:hidden;background:#fff}
+    .manual-viewer__frame{border:1px solid #d8d8d8;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);background:#fff}
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
-    @media (max-width: 600px){ .manual-viewer__frame object{height:920px} }
+    /* Mobile: turn frame into scroll container with full viewport height for thumb scrolling */
+    @media (max-width: 600px){
+      .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+      .manual-viewer__frame object{height:100%;min-height:920px;}
+    }
   </style>
 </head>
 <body>
