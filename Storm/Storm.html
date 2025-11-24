@@ -21,7 +21,11 @@
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
     /* pdf.js page canvas styling (preserve natural aspect ratio) */
     #pdfPages{padding:16px 0;}
-    #pdfPages canvas{display:block;margin:0 auto 24px;max-width:100%;width:auto;background:#fff;border:1px solid #e1e1e1;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+    #pdfPages canvas{display:block;margin:0 auto 24px;max-width:100%;background:#fff;border:1px solid #e1e1e1;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+    .pdf-controls{display:flex;gap:12px;justify-content:center;align-items:center;padding:8px 12px;border-top:1px solid #e1e1e1;background:#f7f7f7;position:sticky;bottom:0;z-index:40}
+    .pdf-controls button{font-family:'VCR OSD Mono', monospace;background:#fafafa;border:1px solid #d2d2d2;border-radius:6px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
+    .pdf-controls button:disabled{opacity:.35;cursor:not-allowed}
+    .pdf-controls .page-indicator{font-size:14px;font-weight:600}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
     /* Mobile: turn frame into scroll container with full viewport height for thumb scrolling */
     @media (max-width: 600px){
@@ -41,6 +45,11 @@
         <p>Cannot display PDF. <a href="../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf">Open manual.</a></p>
       </object>
       <div id="pdfPages" aria-label="Storm manual full pages" style="display:none;"></div>
+      <div id="mobilePdfControls" class="pdf-controls" style="display:none;">
+        <button id="prevPage" disabled>Prev</button>
+        <span id="pageIndicator" class="page-indicator">Page 1 / 1</span>
+        <button id="nextPage" disabled>Next</button>
+      </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js" integrity="sha512-WyQnD6G7QqB0uQMnFZqre1H+X1vEZh1MZkJX2uKJQ7npCwQSoE3o1XX6Yw1sqn/w1JvNeh5AO2gdhukwSzpUdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
@@ -59,33 +68,49 @@
           let currentPage = 1;
           const total = doc.numPages;
           const frame = document.querySelector('.manual-viewer__frame');
-          const loadNext = () => {
-            if(currentPage > total) return;
-            const pageNum = currentPage++;
-            doc.getPage(pageNum).then(page => {
-              // Base viewport at scale 1
-              const baseViewport = page.getViewport({ scale: 1 });
-              const availWidth = (frame ? frame.clientWidth : window.innerWidth) - 32; // padding allowance
-              let scale = availWidth / baseViewport.width;
-              // Avoid excessive upscale; keep natural size if smaller
-              if(scale > 1.2) scale = 1.2;
-              if(scale < 1) scale = 1; // do not downscale to prevent blur
-              const viewport = page.getViewport({ scale });
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              // High-DPI support
-              const ratio = window.devicePixelRatio || 1;
-              canvas.width = viewport.width * ratio;
-              canvas.height = viewport.height * ratio;
-              canvas.style.width = viewport.width + 'px';
-              canvas.style.height = viewport.height + 'px';
-              pagesContainer.appendChild(canvas);
-              page.render({ canvasContext: ctx, viewport, transform: [ratio,0,0,ratio,0,0] }).promise.then(()=>{
-                if(pageNum < total){ loadNext(); }
+          const controls = document.getElementById('mobilePdfControls');
+          const prevBtn = document.getElementById('prevPage');
+          const nextBtn = document.getElementById('nextPage');
+          const indicator = document.getElementById('pageIndicator');
+          controls.style.display='flex';
+
+          function updateControls(){
+            indicator.textContent = `Page ${currentPage} / ${total}`;
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === total;
+          }
+
+            function renderPage(num){
+              pagesContainer.innerHTML='';
+              doc.getPage(num).then(page => {
+                const baseViewport = page.getViewport({ scale: 1 });
+                const availWidth = (frame ? frame.clientWidth : window.innerWidth) - 32;
+                let scale = availWidth / baseViewport.width; // allow downscale to fit mobile width
+                if(scale > 1.2) scale = 1.2; // soft cap upscale
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const ratio = window.devicePixelRatio || 1;
+                canvas.width = viewport.width * ratio;
+                canvas.height = viewport.height * ratio;
+                canvas.style.width = viewport.width + 'px';
+                canvas.style.height = viewport.height + 'px';
+                pagesContainer.appendChild(canvas);
+                page.render({ canvasContext: ctx, viewport, transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
+                  updateControls();
+                });
               });
-            });
-          };
-          loadNext();
+            }
+
+          prevBtn.addEventListener('click', ()=>{ if(currentPage>1){ currentPage--; renderPage(currentPage); } });
+          nextBtn.addEventListener('click', ()=>{ if(currentPage<total){ currentPage++; renderPage(currentPage); } });
+
+          // Swipe gestures
+          let touchStartX=null; let touchStartY=null;
+          frame.addEventListener('touchstart', e=>{ const t=e.changedTouches[0]; touchStartX=t.clientX; touchStartY=t.clientY; });
+          frame.addEventListener('touchend', e=>{ const t=e.changedTouches[0]; if(touchStartX==null) return; const dx=t.clientX - touchStartX; const dy=t.clientY - touchStartY; if(Math.abs(dx)>50 && Math.abs(dy)<40){ if(dx<0 && currentPage<total){ currentPage++; renderPage(currentPage); } else if(dx>0 && currentPage>1){ currentPage--; renderPage(currentPage); } } touchStartX=null; });
+
+          renderPage(currentPage);
         }).catch(err => {
           console.error('[PDFJS] Failed to render:', err);
           // Show fallback if pdf.js fails
