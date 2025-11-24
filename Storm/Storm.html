@@ -26,6 +26,8 @@
     .pdf-controls button{font-family:'VCR OSD Mono', monospace;background:#fafafa;border:1px solid #d2d2d2;border-radius:6px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
     .pdf-controls button:disabled{opacity:.35;cursor:not-allowed}
     .pdf-controls .page-indicator{font-size:14px;font-weight:600}
+    .pdf-controls .zoom-group{display:flex;gap:6px;align-items:center}
+    @keyframes spin{to{transform:rotate(360deg)}}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
     /* Mobile: turn frame into scroll container with full viewport height for thumb scrolling */
     @media (max-width: 600px){
@@ -49,6 +51,14 @@
         <button id="prevPage" disabled>Prev</button>
         <span id="pageIndicator" class="page-indicator">Page 1 / 1</span>
         <button id="nextPage" disabled>Next</button>
+        <div class="zoom-group">
+          <button id="zoomOut" disabled>-</button>
+          <button id="zoomReset" disabled>Reset</button>
+          <button id="zoomIn" disabled>+</button>
+        </div>
+      </div>
+      <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
+        <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
       </div>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js" integrity="sha512-WyQnD6G7QqB0uQMnFZqre1H+X1vEZh1MZkJX2uKJQ7npCwQSoE3o1XX6Yw1sqn/w1JvNeh5AO2gdhukwSzpUdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -58,7 +68,9 @@
         const pagesContainer = document.getElementById('pdfPages');
         const fallbackObj = document.getElementById('pdfObjectFallback');
         // Only switch to pdf.js on small screens (mobile) to address single-page issue
-        const usePdfJs = window.matchMedia('(max-width: 600px)').matches;
+        const smallWidth = window.matchMedia('(max-width: 900px)').matches;
+        const coarse = window.matchMedia('(pointer:coarse)').matches;
+        const usePdfJs = (smallWidth || coarse);
         if(!usePdfJs || !window['pdfjsLib']){ return; }
         // Hide fallback native viewer
         if(fallbackObj) fallbackObj.style.display = 'none';
@@ -72,21 +84,39 @@
           const prevBtn = document.getElementById('prevPage');
           const nextBtn = document.getElementById('nextPage');
           const indicator = document.getElementById('pageIndicator');
+          const zoomOutBtn = document.getElementById('zoomOut');
+          const zoomInBtn = document.getElementById('zoomIn');
+          const zoomResetBtn = document.getElementById('zoomReset');
+          const loadingEl = document.getElementById('pdfLoading');
           controls.style.display='flex';
+
+          let baseScale = 1; // derived from width
+          let zoomFactor = 1; // user zoom
+          const MIN_ZOOM = 0.5;
+          const MAX_ZOOM = 2.0;
 
           function updateControls(){
             indicator.textContent = `Page ${currentPage} / ${total}`;
             prevBtn.disabled = currentPage === 1;
             nextBtn.disabled = currentPage === total;
+            zoomOutBtn.disabled = zoomFactor <= MIN_ZOOM + 0.001;
+            zoomInBtn.disabled = zoomFactor >= MAX_ZOOM - 0.001;
+            zoomResetBtn.disabled = Math.abs(zoomFactor - 1) < 0.001;
           }
 
+            function computeBaseScale(page){
+              const baseViewport = page.getViewport({ scale: 1 });
+              const availWidth = (frame ? frame.clientWidth : window.innerWidth) - 32;
+              let scale = availWidth / baseViewport.width;
+              if(scale > 1.2) scale = 1.2; // cap upscale
+              baseScale = scale;
+              return scale * zoomFactor;
+            }
             function renderPage(num){
               pagesContainer.innerHTML='';
+              loadingEl.style.display='block';
               doc.getPage(num).then(page => {
-                const baseViewport = page.getViewport({ scale: 1 });
-                const availWidth = (frame ? frame.clientWidth : window.innerWidth) - 32;
-                let scale = availWidth / baseViewport.width; // allow downscale to fit mobile width
-                if(scale > 1.2) scale = 1.2; // soft cap upscale
+                const scale = computeBaseScale(page);
                 const viewport = page.getViewport({ scale });
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -97,6 +127,7 @@
                 canvas.style.height = viewport.height + 'px';
                 pagesContainer.appendChild(canvas);
                 page.render({ canvasContext: ctx, viewport, transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
+                  loadingEl.style.display='none';
                   updateControls();
                 });
               });
@@ -104,6 +135,16 @@
 
           prevBtn.addEventListener('click', ()=>{ if(currentPage>1){ currentPage--; renderPage(currentPage); } });
           nextBtn.addEventListener('click', ()=>{ if(currentPage<total){ currentPage++; renderPage(currentPage); } });
+          zoomOutBtn.addEventListener('click', ()=>{ if(zoomFactor>MIN_ZOOM){ zoomFactor = Math.max(MIN_ZOOM, zoomFactor - 0.1); renderPage(currentPage); } });
+          zoomInBtn.addEventListener('click', ()=>{ if(zoomFactor<MAX_ZOOM){ zoomFactor = Math.min(MAX_ZOOM, zoomFactor + 0.1); renderPage(currentPage); } });
+          zoomResetBtn.addEventListener('click', ()=>{ zoomFactor = 1; renderPage(currentPage); });
+
+          let resizeTimer=null;
+          window.addEventListener('resize', ()=>{
+            if(!usePdfJs) return;
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(()=>{ renderPage(currentPage); }, 250);
+          });
 
           // Swipe gestures
           let touchStartX=null; let touchStartY=null;
