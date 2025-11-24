@@ -71,7 +71,9 @@
         // Only switch to pdf.js on small screens (mobile) to address single-page issue
         const smallWidth = window.matchMedia('(max-width: 900px)').matches;
         const coarse = window.matchMedia('(pointer:coarse)').matches;
-        const usePdfJs = (smallWidth || coarse);
+        const urlParams = new URLSearchParams(location.search);
+        const forceMobile = urlParams.get('mobilePdf') === '1';
+        const usePdfJs = forceMobile || smallWidth || coarse;
         if(!usePdfJs || !window['pdfjsLib']){ return; }
         // Hide fallback native viewer
         if(fallbackObj) fallbackObj.style.display = 'none';
@@ -95,6 +97,7 @@
           let zoomFactor = 1; // user zoom
           const MIN_ZOOM = 0.5;
           const MAX_ZOOM = 2.0;
+          indicator.textContent = 'Loading…';
 
           function updateControls(){
             indicator.textContent = `Page ${currentPage} / ${total}`;
@@ -116,6 +119,7 @@
             function renderPage(num){
               pagesContainer.innerHTML='';
               loadingEl.style.display='block';
+              console.log('[PDF] renderPage request',num,'of total',total);
               doc.getPage(num).then(page => {
                 const scale = computeBaseScale(page);
                 const viewport = page.getViewport({ scale });
@@ -130,12 +134,14 @@
                 page.render({ canvasContext: ctx, viewport, transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
                   loadingEl.style.display='none';
                   updateControls();
+                  console.log('[PDF] render complete page',num,'canvas size',canvas.width,'x',canvas.height,'css',canvas.style.width,canvas.style.height);
                 });
               });
             }
 
           prevBtn.addEventListener('click', ()=>{ if(currentPage>1){ currentPage--; renderPage(currentPage); } });
           nextBtn.addEventListener('click', ()=>{ if(currentPage<total){ currentPage++; renderPage(currentPage); } });
+          pagesContainer.addEventListener('click',()=>{ if(currentPage<total){ currentPage++; renderPage(currentPage); } });
           zoomOutBtn.addEventListener('click', ()=>{ if(zoomFactor>MIN_ZOOM){ zoomFactor = Math.max(MIN_ZOOM, zoomFactor - 0.1); renderPage(currentPage); } });
           zoomInBtn.addEventListener('click', ()=>{ if(zoomFactor<MAX_ZOOM){ zoomFactor = Math.min(MAX_ZOOM, zoomFactor + 0.1); renderPage(currentPage); } });
           zoomResetBtn.addEventListener('click', ()=>{ zoomFactor = 1; renderPage(currentPage); });
@@ -152,6 +158,7 @@
           frame.addEventListener('touchstart', e=>{ const t=e.changedTouches[0]; touchStartX=t.clientX; touchStartY=t.clientY; });
           frame.addEventListener('touchend', e=>{ const t=e.changedTouches[0]; if(touchStartX==null) return; const dx=t.clientX - touchStartX; const dy=t.clientY - touchStartY; if(Math.abs(dx)>50 && Math.abs(dy)<40){ if(dx<0 && currentPage<total){ currentPage++; renderPage(currentPage); } else if(dx>0 && currentPage>1){ currentPage--; renderPage(currentPage); } } touchStartX=null; });
 
+          console.log('[PDF] Document loaded total pages =', total);
           renderPage(currentPage);
         }).catch(err => {
           console.error('[PDFJS] Failed to render:', err);
