@@ -88,40 +88,22 @@
           let baseScale=1; let zoomFactor=1; const MIN_ZOOM=0.5; const MAX_ZOOM=2.0;
           indicator.textContent='Loading…';
 
-          const multiMode = true;
-          if(multiMode){
-            indicator.textContent='Loading pages…';
-            let renderedCount=0; const pageCanvases=[];
-            function computeScale(page){
-              const baseViewport=page.getViewport({scale:1});
-              const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
-              let scale=availWidth/baseViewport.width; if(scale>1.2) scale=1.2; return scale;
-            }
-            function updateControlsMulti(){
-              prevBtn.disabled = currentPage <= 1;
-              nextBtn.disabled = currentPage >= renderedCount;
-              zoomOutBtn.disabled = true; zoomInBtn.disabled = true; zoomResetBtn.disabled = true;
-              indicator.textContent = `Page ${currentPage} / ${renderedCount || total}`;
-            }
-            function scrollToPage(num){ if(num<1||num>renderedCount) return; currentPage=num; const c=pageCanvases[num-1]; if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); updateControlsMulti(); }
-            pagesContainer.addEventListener('scroll',()=>{ if(!renderedCount) return; const top=pagesContainer.scrollTop; let best=currentPage; let bestDelta=Infinity; pageCanvases.forEach((c,i)=>{ const d=Math.abs(c.offsetTop-top); if(d<bestDelta){bestDelta=d; best=i+1;} }); if(best!==currentPage){ currentPage=best; updateControlsMulti(); } });
-            function renderSequential(num){
-              if(num>total){ indicator.textContent=`All ${total} pages loaded`; loadingEl.style.display='none'; updateControlsMulti(); return; }
-              loadingEl.style.display='block';
-              doc.getPage(num).then(page=>{
-                const scale=computeScale(page);
-                const viewport=page.getViewport({scale});
-                const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
-                canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
-                pagesContainer.appendChild(canvas);
-                page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ renderedCount++; pageCanvases.push(canvas); indicator.textContent=`Loaded ${renderedCount} / ${total}`; requestAnimationFrame(()=>renderSequential(num+1)); });
-              }).catch(err=>{ console.error('[PDF] page render error',num,err); requestAnimationFrame(()=>renderSequential(num+1)); });
-            }
-            console.log('[PDF] Multi-page mode enabled. Total pages=', total);
-            prevBtn.addEventListener('click',()=>scrollToPage(currentPage-1));
-            nextBtn.addEventListener('click',()=>scrollToPage(currentPage+1));
-            renderSequential(1); return;
-          }
+          const lazyMode = true;
+          if(lazyMode){
+            indicator.textContent='Preparing pages…';
+            const pageSlots=[]; const observed=new Set(); let loadedCount=0;
+            for(let i=1;i<=total;i++){ const slot=document.createElement('div'); slot.className='pdf-page-slot'; slot.style.minHeight='420px'; slot.style.margin='0 0 28px'; slot.style.position='relative'; slot.dataset.page=i; slot.innerHTML='<div class="pdf-page-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#555;">Loading page '+i+'…</div>'; pagesContainer.appendChild(slot); pageSlots.push(slot);}            
+            pagesContainer.style.padding='12px 0 60px';
+            function computeScaleForPage(page){ const baseViewport=page.getViewport({scale:1}); const availWidth=(frame?frame.clientWidth:window.innerWidth)-32; let scale=availWidth/baseViewport.width; if(scale>1.15) scale=1.15; return scale; }
+            function renderPageLazy(num, slot){ loadingEl.style.display='block'; doc.getPage(num).then(page=>{ const scale=computeScaleForPage(page); const viewport=page.getViewport({scale}); const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1; canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px'; slot.innerHTML=''; slot.appendChild(canvas); page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ loadedCount++; indicator.textContent=`Page ${currentPage} / ${total} (Loaded ${loadedCount})`; if(loadedCount===total) loadingEl.style.display='none'; }); }).catch(err=>{ console.error('[PDF] lazy render error page',num,err); slot.querySelector('.pdf-page-loading')?.textContent='Failed page '+num; }); }
+            const io=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ if(entry.isIntersecting){ const slot=entry.target; const pNum=parseInt(slot.dataset.page,10); if(!observed.has(pNum)){ observed.add(pNum); renderPageLazy(pNum,slot);} } }); },{root:frame,rootMargin:'200px 0px 200px 0px',threshold:0});
+            pageSlots.forEach(s=>io.observe(s));
+            function updateControlsLazy(){ prevBtn.disabled=currentPage<=1; nextBtn.disabled=currentPage>=total; zoomOutBtn.disabled=true; zoomInBtn.disabled=true; zoomResetBtn.disabled=true; indicator.textContent=`Page ${currentPage} / ${total} (Loaded ${loadedCount})`; }
+            function scrollTo(num){ if(num<1||num>total) return; currentPage=num; pageSlots[num-1].scrollIntoView({behavior:'smooth',block:'start'}); updateControlsLazy(); }
+            prevBtn.addEventListener('click',()=>scrollTo(currentPage-1));
+            nextBtn.addEventListener('click',()=>scrollTo(currentPage+1));
+            pagesContainer.addEventListener('scroll',()=>{ const top=pagesContainer.scrollTop; let best=currentPage; let bestDelta=Infinity; pageSlots.forEach((slot,i)=>{ const d=Math.abs(slot.offsetTop-top); if(d<bestDelta){bestDelta=d; best=i+1;} }); if(best!==currentPage){ currentPage=best; updateControlsLazy(); } });
+            updateControlsLazy(); console.log('[PDF] Lazy mode initialized. Total pages=', total); return; }
           function updateControls(){
             indicator.textContent = `Page ${currentPage} / ${total}`;
             prevBtn.disabled = currentPage === 1;
