@@ -97,26 +97,26 @@
               zoomInBtn.style.display='none';
               zoomResetBtn.style.display='none';
               indicator.textContent='Loading pages…';
-              function computeScale(page){
-                const baseViewport=page.getViewport({scale:1});
-                const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
-                let scale=availWidth/baseViewport.width; if(scale>1.2) scale=1.2; return scale;
-              }
-              let renderedCount=0;
-              function renderSequential(num){
-                if(num>total){ indicator.textContent=`All ${total} pages loaded`; loadingEl.style.display='none'; return; }
-                loadingEl.style.display='block';
-                doc.getPage(num).then(page=>{
-                  const scale=computeScale(page);
-                  const viewport=page.getViewport({scale});
-                  const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
-                  canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
-                  pagesContainer.appendChild(canvas);
-                  page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ renderedCount++; indicator.textContent=`Loaded ${renderedCount} / ${total}`; requestAnimationFrame(()=>renderSequential(num+1)); });
-                }).catch(err=>{ console.error('[PDF] page render error',num,err); requestAnimationFrame(()=>renderSequential(num+1)); });
-              }
-              console.log('[PDF] Multi-page mode enabled. Total pages=', total);
-              renderSequential(1);
+                function computeScale(page){
+                  const baseViewport=page.getViewport({scale:1});
+                  const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
+                  let scale=availWidth/baseViewport.width; if(scale>1.2) scale=1.2; return scale;
+                }
+                let renderedCount=0;
+                function renderSequential(num){
+                  if(num>total){ indicator.textContent=`All ${total} pages loaded`; loadingEl.style.display='none'; updateControlsMulti(); return; }
+                  loadingEl.style.display='block';
+                  doc.getPage(num).then(page=>{
+                    const scale=computeScale(page);
+                    const viewport=page.getViewport({scale});
+                    const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
+                    canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
+                    pagesContainer.appendChild(canvas);
+                    page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ renderedCount++; indicator.textContent=`Loaded ${renderedCount} / ${total}`; requestAnimationFrame(()=>renderSequential(num+1)); });
+                  }).catch(err=>{ console.error('[PDF] page render error',num,err); requestAnimationFrame(()=>renderSequential(num+1)); });
+                }
+                console.log('[PDF] Multi-page mode enabled. Total pages=', total);
+                renderSequential(1);
               return;
             }
             function updateControls(){

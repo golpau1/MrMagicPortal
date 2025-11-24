@@ -90,40 +90,37 @@
 
           const multiMode = true;
           if(multiMode){
-            prevBtn.style.display='none';
-            nextBtn.style.display='none';
-            zoomOutBtn.style.display='none';
-            zoomInBtn.style.display='none';
-            zoomResetBtn.style.display='none';
             indicator.textContent='Loading pages…';
+            let renderedCount=0; const pageCanvases=[];
             function computeScale(page){
               const baseViewport=page.getViewport({scale:1});
               const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
               let scale=availWidth/baseViewport.width; if(scale>1.2) scale=1.2; return scale;
             }
-            let renderedCount=0;
+            function updateControlsMulti(){
+              prevBtn.disabled = currentPage <= 1;
+              nextBtn.disabled = currentPage >= renderedCount;
+              zoomOutBtn.disabled = true; zoomInBtn.disabled = true; zoomResetBtn.disabled = true;
+              indicator.textContent = `Page ${currentPage} / ${renderedCount || total}`;
+            }
+            function scrollToPage(num){ if(num<1||num>renderedCount) return; currentPage=num; const c=pageCanvases[num-1]; if(c) c.scrollIntoView({behavior:'smooth',block:'start'}); updateControlsMulti(); }
+            pagesContainer.addEventListener('scroll',()=>{ if(!renderedCount) return; const top=pagesContainer.scrollTop; let best=currentPage; let bestDelta=Infinity; pageCanvases.forEach((c,i)=>{ const d=Math.abs(c.offsetTop-top); if(d<bestDelta){bestDelta=d; best=i+1;} }); if(best!==currentPage){ currentPage=best; updateControlsMulti(); } });
             function renderSequential(num){
-              if(num>total){
-                indicator.textContent=`All ${total} pages loaded`;
-                loadingEl.style.display='none';
-                return;
-              }
+              if(num>total){ indicator.textContent=`All ${total} pages loaded`; loadingEl.style.display='none'; updateControlsMulti(); return; }
               loadingEl.style.display='block';
               doc.getPage(num).then(page=>{
                 const scale=computeScale(page);
                 const viewport=page.getViewport({scale});
                 const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
-                canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio;
-                canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
+                canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
                 pagesContainer.appendChild(canvas);
-                page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
-                  renderedCount++; indicator.textContent=`Loaded ${renderedCount} / ${total}`; requestAnimationFrame(()=>renderSequential(num+1));
-                });
+                page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ renderedCount++; pageCanvases.push(canvas); indicator.textContent=`Loaded ${renderedCount} / ${total}`; requestAnimationFrame(()=>renderSequential(num+1)); });
               }).catch(err=>{ console.error('[PDF] page render error',num,err); requestAnimationFrame(()=>renderSequential(num+1)); });
             }
             console.log('[PDF] Multi-page mode enabled. Total pages=', total);
-            renderSequential(1);
-            return;
+            prevBtn.addEventListener('click',()=>scrollToPage(currentPage-1));
+            nextBtn.addEventListener('click',()=>scrollToPage(currentPage+1));
+            renderSequential(1); return;
           }
           function updateControls(){
             indicator.textContent = `Page ${currentPage} / ${total}`;
