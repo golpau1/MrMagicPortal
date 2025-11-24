@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Storm Operators Manual</title>
+  <title>Smart Wash Operator Manual</title>
   <style>
     @font-face{
       font-family:'VCR OSD Mono';
@@ -21,11 +21,7 @@
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
     #pdfPages{padding:16px 0;}
     #pdfPages canvas{display:block;margin:0 auto 24px;max-width:100%;background:#fff;border:1px solid #e1e1e1;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
-    .pdf-controls{display:flex;gap:12px;justify-content:center;align-items:center;padding:8px 12px;border-top:1px solid #e1e1e1;background:#f7f7f7;position:sticky;bottom:0;z-index:40}
-    .pdf-controls button{font-family:'VCR OSD Mono', monospace;background:#fafafa;border:1px solid #d2d2d2;border-radius:6px;padding:6px 12px;font-size:14px;font-weight:600;cursor:pointer}
-    .pdf-controls button:disabled{opacity:.35;cursor:not-allowed}
-    .pdf-controls .page-indicator{font-size:14px;font-weight:600}
-    .pdf-controls .zoom-group{display:flex;gap:6px;align-items:center}
+    /* Removed interactive PDF controls */
     @keyframes spin{to{transform:rotate(360deg)}}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
     @media (max-width: 600px){
@@ -45,16 +41,6 @@
         <p>Cannot display PDF. <a href="../Assets/Smart%20Wash%20Operator%20Manual.pdf">Open manual.</a></p>
       </object>
       <div id="pdfPages" aria-label="Smart Wash manual full pages" style="display:none;"></div>
-      <div id="mobilePdfControls" class="pdf-controls" style="display:none;">
-        <button id="prevPage" disabled>Prev</button>
-        <span id="pageIndicator" class="page-indicator">Page 1 / 1</span>
-        <button id="nextPage" disabled>Next</button>
-        <div class="zoom-group">
-          <button id="zoomOut" disabled>-</button>
-          <button id="zoomReset" disabled>Reset</button>
-          <button id="zoomIn" disabled>+</button>
-        </div>
-      </div>
       <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
         <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
       </div>
@@ -75,75 +61,34 @@
         pagesContainer.style.display='block';
         pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
         pdfjsLib.getDocument(pdfUrl).promise.then(doc=>{
-          let currentPage=1; const total=doc.numPages; const frame=document.querySelector('.manual-viewer__frame');
-          const controls=document.getElementById('mobilePdfControls');
-          const prevBtn=document.getElementById('prevPage');
-          const nextBtn=document.getElementById('nextPage');
-          const indicator=document.getElementById('pageIndicator');
-          const zoomOutBtn = document.getElementById('zoomOut');
-          const zoomInBtn = document.getElementById('zoomIn');
-          const zoomResetBtn = document.getElementById('zoomReset');
-          const loadingEl = document.getElementById('pdfLoading');
-          controls.style.display='flex';
-          let baseScale=1; let zoomFactor=1; const MIN_ZOOM=0.5; const MAX_ZOOM=2.0;
-          indicator.textContent='Loading…';
-
-          const lazyMode = true;
-          if(lazyMode){
-            indicator.textContent='Preparing pages…';
-            const pageSlots=[]; const observed=new Set(); let loadedCount=0;
-            for(let i=1;i<=total;i++){ const slot=document.createElement('div'); slot.className='pdf-page-slot'; slot.style.minHeight='420px'; slot.style.margin='0 0 28px'; slot.style.position='relative'; slot.dataset.page=i; slot.innerHTML='<div class="pdf-page-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;color:#555;">Loading page '+i+'…</div>'; pagesContainer.appendChild(slot); pageSlots.push(slot);}            
-            pagesContainer.style.padding='12px 0 60px';
-            function computeScaleForPage(page){ const baseViewport=page.getViewport({scale:1}); const availWidth=(frame?frame.clientWidth:window.innerWidth)-32; let scale=availWidth/baseViewport.width; if(scale>1.15) scale=1.15; return scale; }
-            function renderPageLazy(num, slot){ loadingEl.style.display='block'; doc.getPage(num).then(page=>{ const scale=computeScaleForPage(page); const viewport=page.getViewport({scale}); const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1; canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px'; slot.innerHTML=''; slot.appendChild(canvas); page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ loadedCount++; indicator.textContent=`Page ${currentPage} / ${total} (Loaded ${loadedCount})`; if(loadedCount===total) loadingEl.style.display='none'; }); }).catch(err=>{ console.error('[PDF] lazy render error page',num,err); slot.querySelector('.pdf-page-loading')?.textContent='Failed page '+num; }); }
-            const io=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ if(entry.isIntersecting){ const slot=entry.target; const pNum=parseInt(slot.dataset.page,10); if(!observed.has(pNum)){ observed.add(pNum); renderPageLazy(pNum,slot);} } }); },{root:frame,rootMargin:'200px 0px 200px 0px',threshold:0});
-            pageSlots.forEach(s=>io.observe(s));
-            function updateControlsLazy(){ prevBtn.disabled=currentPage<=1; nextBtn.disabled=currentPage>=total; zoomOutBtn.disabled=true; zoomInBtn.disabled=true; zoomResetBtn.disabled=true; indicator.textContent=`Page ${currentPage} / ${total} (Loaded ${loadedCount})`; }
-            function scrollTo(num){ if(num<1||num>total) return; currentPage=num; pageSlots[num-1].scrollIntoView({behavior:'smooth',block:'start'}); updateControlsLazy(); }
-            prevBtn.addEventListener('click',()=>scrollTo(currentPage-1));
-            nextBtn.addEventListener('click',()=>scrollTo(currentPage+1));
-            pagesContainer.addEventListener('scroll',()=>{ const top=pagesContainer.scrollTop; let best=currentPage; let bestDelta=Infinity; pageSlots.forEach((slot,i)=>{ const d=Math.abs(slot.offsetTop-top); if(d<bestDelta){bestDelta=d; best=i+1;} }); if(best!==currentPage){ currentPage=best; updateControlsLazy(); } });
-            updateControlsLazy(); console.log('[PDF] Lazy mode initialized. Total pages=', total); return; }
-          function updateControls(){
-            indicator.textContent = `Page ${currentPage} / ${total}`;
-            prevBtn.disabled = currentPage === 1;
-            nextBtn.disabled = currentPage === total;
-            zoomOutBtn.disabled = zoomFactor <= MIN_ZOOM + 0.001;
-            zoomInBtn.disabled = zoomFactor >= MAX_ZOOM - 0.001;
-            zoomResetBtn.disabled = Math.abs(zoomFactor - 1) < 0.001;
-          }
-          function computeBaseScale(page){
+          const total=doc.numPages; const frame=document.querySelector('.manual-viewer__frame');
+          const loadingEl=document.getElementById('pdfLoading');
+          loadingEl.style.display='block';
+          function computeScale(page){
             const baseViewport=page.getViewport({scale:1});
             const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
-            let scale=availWidth/baseViewport.width; if(scale>1.2) scale=1.2;
-            baseScale=scale; return scale*zoomFactor;
+            let scale=availWidth/baseViewport.width; if(scale>1.15) scale=1.15; return scale;
           }
-          function renderPage(num){
-            pagesContainer.innerHTML='';
-            loadingEl.style.display='block';
-            console.log('[PDF] renderPage request',num,'of total',total);
-            doc.getPage(num).then(page=>{
-              const scale=computeBaseScale(page);
+          function renderSequential(i){
+            if(i>total){ loadingEl.style.display='none'; console.log('[PDF] Smart Wash pages rendered as images'); return; }
+            doc.getPage(i).then(page=>{
+              const scale=computeScale(page);
               const viewport=page.getViewport({scale});
               const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
               canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
-              pagesContainer.appendChild(canvas);
-              page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{ loadingEl.style.display='none'; updateControls(); console.log('[PDF] render complete page',num); });
-            });
+              page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
+                const img=document.createElement('img');
+                img.src=canvas.toDataURL('image/png');
+                img.alt='Smart Wash manual page '+i;
+                img.style.display='block'; img.style.margin='0 auto 28px'; img.style.maxWidth='100%'; img.style.border='1px solid #e1e1e1'; img.style.borderRadius='4px'; img.style.boxShadow='0 2px 6px rgba(0,0,0,0.08)';
+                pagesContainer.appendChild(img);
+                canvas.width=0; canvas.height=0;
+                requestAnimationFrame(()=>renderSequential(i+1));
+              });
+            }).catch(err=>{ console.error('[PDF] Smart Wash page render error',i,err); requestAnimationFrame(()=>renderSequential(i+1)); });
           }
-          prevBtn.addEventListener('click',()=>{ if(currentPage>1){ currentPage--; renderPage(currentPage); } });
-          nextBtn.addEventListener('click',()=>{ if(currentPage<total){ currentPage++; renderPage(currentPage); } });
-          pagesContainer.addEventListener('click',()=>{ if(currentPage<total){ currentPage++; renderPage(currentPage); } });
-          zoomOutBtn.addEventListener('click',()=>{ if(zoomFactor>MIN_ZOOM){ zoomFactor=Math.max(MIN_ZOOM, zoomFactor-0.1); renderPage(currentPage);} });
-          zoomInBtn.addEventListener('click',()=>{ if(zoomFactor<MAX_ZOOM){ zoomFactor=Math.min(MAX_ZOOM, zoomFactor+0.1); renderPage(currentPage);} });
-          zoomResetBtn.addEventListener('click',()=>{ zoomFactor=1; renderPage(currentPage); });
-          let resizeTimer=null; window.addEventListener('resize',()=>{ if(!usePdfJs) return; clearTimeout(resizeTimer); resizeTimer=setTimeout(()=>{ renderPage(currentPage); },250); });
-          let touchStartX=null; let touchStartY=null;
-          frame.addEventListener('touchstart',e=>{ const t=e.changedTouches[0]; touchStartX=t.clientX; touchStartY=t.clientY; });
-          frame.addEventListener('touchend',e=>{ const t=e.changedTouches[0]; if(touchStartX==null) return; const dx=t.clientX-touchStartX; const dy=t.clientY-touchStartY; if(Math.abs(dx)>50 && Math.abs(dy)<40){ if(dx<0 && currentPage<total){ currentPage++; renderPage(currentPage); } else if(dx>0 && currentPage>1){ currentPage--; renderPage(currentPage); } } touchStartX=null; });
-          console.log('[PDF] Document loaded total pages =', total);
-          renderPage(currentPage);
-        }).catch(err=>{ console.error('[PDFJS] Smart Wash render fail',err); if(fallbackObj) fallbackObj.style.display='block'; pagesContainer.style.display='none'; });
+          renderSequential(1);
+        }).catch(err=>{ console.error('[PDFJS] Smart Wash image render fail',err); if(fallbackObj) fallbackObj.style.display='block'; pagesContainer.style.display='none'; });
       })();
     </script>
   </section>
