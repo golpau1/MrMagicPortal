@@ -54,8 +54,8 @@
           const pagesContainer = document.getElementById('pdfPages');
           const loadingEl = document.getElementById('pdfLoading');
           const frame = document.querySelector('.manual-viewer__frame');
-          // Show container and loader
-          pagesContainer.style.display = 'block';
+          // Show container and loader (use flex so align-items:center works)
+          pagesContainer.style.display = 'flex';
           loadingEl.style.display = 'block';
           // Build list of image paths from the Storm Manual folder
           const total = 79; // images numbered 0..78 inclusive
