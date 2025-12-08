@@ -48,70 +48,39 @@
         <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
       </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js" integrity="sha512-WyQnD6G7QqB0uQMnFZqre1H+X1vEZh1MZkJX2uKJQ7npCwQSoE3o1XX6Yw1sqn/w1JvNeh5AO2gdhukwSzpUdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script>
-      (function(){
-        const pdfUrl = '../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf';
-        const pagesContainer = document.getElementById('pdfPages');
-        const fallbackObj = document.getElementById('pdfObjectFallback');
-        // Always render as stacked images when pdf.js is available (all devices)
-        if(!window['pdfjsLib']){ return; }
-        // Hide fallback native viewer
-        if(fallbackObj) fallbackObj.style.display = 'none';
-        pagesContainer.style.display = 'block';
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
-        pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
-          const total = doc.numPages;
-          const frame = document.querySelector('.manual-viewer__frame');
-          const loadingEl = document.getElementById('pdfLoading');
+      <script>
+        (function(){
           const pagesContainer = document.getElementById('pdfPages');
-          // Show container
-          loadingEl.style.display='block';
-          function computeScale(page){
-            const baseViewport = page.getViewport({scale:1});
-            const availWidth = (frame?frame.clientWidth:window.innerWidth) - 32;
-            let scale = availWidth / baseViewport.width;
-            if(scale>1.15) scale=1.15;
-            return scale;
+          const loadingEl = document.getElementById('pdfLoading');
+          const frame = document.querySelector('.manual-viewer__frame');
+          // Show container and loader
+          pagesContainer.style.display = 'block';
+          loadingEl.style.display = 'block';
+          // Build list of image paths from the Storm Manual folder
+          const total = 79; // images numbered 0..78 inclusive
+          const basePath = 'Storm Manual/STORM OPERATORS MANUAL 37-images-';
+          const imgs = [];
+          for(let i=0;i<total;i++) imgs.push(basePath + i + '.jpg');
+          // Append images sequentially
+          let i = 0;
+          function appendNext(){
+            if(i >= imgs.length){ loadingEl.style.display='none'; return; }
+            const src = imgs[i];
+            const img = new Image();
+            img.alt = 'Storm manual page ' + (i+1);
+            img.style.display='block';
+            img.style.margin='0 auto 28px';
+            img.style.maxWidth='100%';
+            img.style.border='1px solid #e1e1e1';
+            img.style.borderRadius='4px';
+            img.style.boxShadow='0 2px 6px rgba(0,0,0,0.08)';
+            img.onload = function(){ pagesContainer.appendChild(img); i++; requestAnimationFrame(appendNext); };
+            img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
+            img.src = src;
           }
-          function renderPageSequential(i){
-            if(i>total){ loadingEl.style.display='none'; console.log('[PDF] All pages rendered as images'); return; }
-            doc.getPage(i).then(page => {
-              const scale = computeScale(page);
-              const viewport = page.getViewport({scale});
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              const ratio = window.devicePixelRatio||1;
-              canvas.width = viewport.width * ratio;
-              canvas.height = viewport.height * ratio;
-              canvas.style.width = viewport.width + 'px';
-              canvas.style.height = viewport.height + 'px';
-              page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
-                // Convert to image element for simpler stacking
-                const img = document.createElement('img');
-                img.src = canvas.toDataURL('image/png');
-                img.alt = 'Storm manual page '+i;
-                img.style.display='block';
-                img.style.margin='0 auto 28px';
-                img.style.maxWidth='100%';
-                img.style.border='1px solid #e1e1e1';
-                img.style.borderRadius='4px';
-                img.style.boxShadow='0 2px 6px rgba(0,0,0,0.08)';
-                pagesContainer.appendChild(img);
-                // Free canvas memory reference
-                canvas.width=0; canvas.height=0;
-                requestAnimationFrame(()=>renderPageSequential(i+1));
-              });
-            }).catch(err => { console.error('[PDF] Page render error', i, err); requestAnimationFrame(()=>renderPageSequential(i+1)); });
-          }
-          renderPageSequential(1);
-        }).catch(err => {
-          console.error('[PDFJS] Failed to render as images:', err);
-          if(fallbackObj) fallbackObj.style.display='block';
-          pagesContainer.style.display='none';
-        });
-      })();
-    </script>
+          appendNext();
+        })();
+      </script>
   </section>
 </body>
 </html>
