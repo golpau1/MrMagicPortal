@@ -23,13 +23,6 @@
     #pdfPages{padding:16px 0;}
     #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
     #pdfPages img{display:block;margin:0 0 24px;max-width:100%;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
-    .manual-layout{display:flex;gap:16px;align-items:flex-start}
-    .thumbs{flex:0 0 140px;width:140px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;border:1px solid #eee;border-radius:8px;background:#fff;padding:8px}
-    .thumbs h3{margin:0 0 8px;font-size:12px;font-weight:600;color:#444}
-    .thumbs img{display:block;width:100%;height:auto;margin:0 0 8px;border:1px solid #ddd;border-radius:4px;cursor:pointer}
-    .thumbs img.active{outline:none;border-color:transparent}
-    .manual-content{flex:1;min-width:0}
-    @media (max-width: 900px){ .manual-layout{display:block} .thumbs{display:none} }
     /* Removed interactive PDF controls */
     @keyframes spin{to{transform:rotate(360deg)}}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
@@ -47,14 +40,9 @@
   <section class="manual-viewer" aria-label="Storm Operators Manual">
     <h2 class="manual-viewer__title">Storm</h2>
     <div class="manual-viewer__frame">
-      <div class="manual-layout">
-        <nav id="thumbStrip" class="thumbs" aria-label="Page thumbnails"></nav>
-        <div class="manual-content">
-          <div id="pdfPages" aria-label="Storm manual full pages" style="display:none;"></div>
-          <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
-            <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
-          </div>
-        </div>
+      <div id="pdfPages" aria-label="Storm manual full pages" style="display:none;"></div>
+      <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
+        <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
       </div>
     </div>
       <script>
@@ -62,7 +50,6 @@
           const pagesContainer = document.getElementById('pdfPages');
           const loadingEl = document.getElementById('pdfLoading');
           const frame = document.querySelector('.manual-viewer__frame');
-          const thumbStrip = document.getElementById('thumbStrip');
           // Show container and loader
           pagesContainer.style.display = 'block';
           loadingEl.style.display = 'block';
@@ -71,70 +58,22 @@
           const basePath = 'Storm Manual/STORM OPERATORS MANUAL 37-images-';
           const imgs = [];
           for(let i=0;i<total;i++) imgs.push(basePath + i + '.jpg');
-          // Build thumbnail strip
-          const thumbs = [];
-          for(let ti=0;ti<total;ti++){
-            const t = new Image();
-            t.src = imgs[ti];
-            t.alt = 'Page ' + (ti+1);
-            t.dataset.index = String(ti);
-            t.addEventListener('click', ()=>{
-              const idx = parseInt(t.dataset.index,10);
-              const target = document.getElementById('page-'+(idx+1));
-              if(target){ target.scrollIntoView({behavior:'smooth', block:'start'}); setActiveThumb(idx); }
-            });
-            thumbs.push(t);
-            thumbStrip.appendChild(t);
-          }
-          let lastActiveIdx = -1;
-          function setActiveThumb(idx){
-            if(idx === lastActiveIdx) return;
-            thumbs.forEach((el,i)=>{ if(i===idx) el.classList.add('active'); else el.classList.remove('active'); });
-            lastActiveIdx = idx;
-            if(thumbs[idx]){
-              try{ thumbs[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'auto'}); }catch(e){}
-            }
-          }
           // Append images sequentially
-          const mainImgs = new Array(total);
           let i = 0;
           function appendNext(){
             if(i >= imgs.length){ loadingEl.style.display='none'; return; }
             const src = imgs[i];
             const img = new Image();
             img.alt = 'Storm manual page ' + (i+1);
-            img.id = 'page-' + (i+1);
             img.style.display='block';
             img.style.margin='0 0 24px';
             img.style.maxWidth='100%';
-            img.onload = function(){ pagesContainer.appendChild(img); mainImgs[i]=img; setActiveThumb(i); i++; requestAnimationFrame(appendNext); };
+            img.onload = function(){ pagesContainer.appendChild(img); i++; requestAnimationFrame(appendNext); };
             img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
             img.src = src;
           }
           appendNext();
-          // Smooth, low-chatter sync between scroll and active thumbnail
-          let scrollTicking = false;
-          function updateActiveFromScroll(){
-            scrollTicking = false;
-            // Find image closest to viewport top (offset by 80px for header/back button)
-            const offset = 80;
-            let bestIdx = lastActiveIdx;
-            let bestDelta = Infinity;
-            for(let k=0;k<mainImgs.length;k++){
-              const el = mainImgs[k];
-              if(!el) break; // only consider loaded images in order
-              const rect = el.getBoundingClientRect();
-              const delta = Math.abs(rect.top - offset);
-              if(delta < bestDelta){ bestDelta = delta; bestIdx = k; }
-            }
-            if(bestIdx != null && bestIdx !== lastActiveIdx){ setActiveThumb(bestIdx); }
-          }
-          window.addEventListener('scroll', ()=>{
-            if(!scrollTicking){
-              scrollTicking = true;
-              window.requestAnimationFrame(updateActiveFromScroll);
-            }
-          }, { passive: true });
+          // No thumbnail viewer — simple stacked images only
         })();
       </script>
   </section>
