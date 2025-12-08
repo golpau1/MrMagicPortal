@@ -101,24 +101,53 @@
             const cw = pagesContainer.clientWidth;
             pagesContainer.scrollLeft = sw > cw ? Math.max(0, (sw - cw) / 2) : 0;
           }
+          function preserveViewportCenter(){
+            const cw = pagesContainer.clientWidth;
+            const prevSW = pagesContainer.scrollWidth || 1;
+            const prevCenter = pagesContainer.scrollLeft + cw/2;
+            // Apply after layout: keep the same proportional center
+            requestAnimationFrame(()=>{
+              const sw = pagesContainer.scrollWidth || 1;
+              const ratio = Math.min(1, Math.max(0, prevCenter / prevSW));
+              const desiredCenter = sw * ratio;
+              const newLeft = Math.max(0, desiredCenter - cw/2);
+              pagesContainer.scrollLeft = newLeft;
+              // One more pass to fight scroll anchoring
+              requestAnimationFrame(()=>{
+                const sw2 = pagesContainer.scrollWidth || 1;
+                const desiredCenter2 = sw2 * ratio;
+                pagesContainer.scrollLeft = Math.max(0, desiredCenter2 - cw/2);
+              });
+            });
+          }
           function applyScale(){
             // Apply scale
             pagesContainer.style.setProperty('--page-scale', String(scale));
             updateButtons();
-            // After layout, center the content horizontally (twice to beat anchoring)
-            requestAnimationFrame(()=>{
-              centerHorizontally();
-              requestAnimationFrame(centerHorizontally);
-            });
+            preserveViewportCenter();
           }
           // Re-center on resize to avoid drift when viewport changes
           let resizeTO;
           window.addEventListener('resize', ()=>{
             clearTimeout(resizeTO);
             resizeTO = setTimeout(()=>{
-              requestAnimationFrame(centerHorizontally);
+              preserveViewportCenter();
             }, 80);
           });
+          // Center once when the first image is loaded
+          const observer = new MutationObserver((mutations)=>{
+            for(const m of mutations){
+              for(const n of m.addedNodes){
+                if(n.tagName === 'IMG'){
+                  // First image: center to start
+                  if(pagesContainer.querySelectorAll('img').length === 1){
+                    requestAnimationFrame(centerHorizontally);
+                  }
+                }
+              }
+            }
+          });
+          observer.observe(pagesContainer, {childList:true});
           function updateButtons(){
             zoomOutBtn.disabled = scale <= MIN_SCALE + 0.001;
             zoomInBtn.disabled = scale >= MAX_SCALE - 0.001;
