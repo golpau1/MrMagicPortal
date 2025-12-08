@@ -22,7 +22,7 @@
     /* Image stack container */
     #pdfPages{padding:16px 0; text-align:center;}
     #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
-    #pdfPages img{display:block;margin:0 auto 24px;width:100%;max-width:100%;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
+    #pdfPages img{display:block;margin:0 auto 24px;width:75%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
     /* Zoom controls removed */
     /* Removed interactive PDF controls */
     @keyframes spin{to{transform:rotate(360deg)}}
@@ -31,6 +31,8 @@
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
       .manual-viewer__frame object{height:100%;min-height:920px;}
+      /* On small screens, let pages fill the width for readability */
+      #pdfPages img{width:100%;max-width:100%;}
     }
   </style>
 </head>
@@ -74,48 +76,18 @@
             img.src = src;
           }
           appendNext();
-          // Zoom controls (affect only the image stack)
-          const zoomOutBtn = document.getElementById('zoomOut');
-          const zoomInBtn = document.getElementById('zoomIn');
-          let scale = 1;
-          const MIN_SCALE = 0.6;
-          const MAX_SCALE = 1.8;
+          // Helper: center horizontally if content wider than viewport
           function centerHorizontally(){
             const sw = pagesContainer.scrollWidth;
             const cw = pagesContainer.clientWidth;
             pagesContainer.scrollLeft = sw > cw ? Math.max(0, (sw - cw) / 2) : 0;
-          }
-          function preserveViewportCenter(){
-            const cw = pagesContainer.clientWidth;
-            const prevSW = pagesContainer.scrollWidth || 1;
-            const prevCenter = pagesContainer.scrollLeft + cw/2;
-            // Apply after layout: keep the same proportional center
-            requestAnimationFrame(()=>{
-              const sw = pagesContainer.scrollWidth || 1;
-              const ratio = Math.min(1, Math.max(0, prevCenter / prevSW));
-              const desiredCenter = sw * ratio;
-              const newLeft = Math.max(0, desiredCenter - cw/2);
-              pagesContainer.scrollLeft = newLeft;
-              // One more pass to fight scroll anchoring
-              requestAnimationFrame(()=>{
-                const sw2 = pagesContainer.scrollWidth || 1;
-                const desiredCenter2 = sw2 * ratio;
-                pagesContainer.scrollLeft = Math.max(0, desiredCenter2 - cw/2);
-              });
-            });
-          }
-          function applyScale(){
-            // Apply scale
-            pagesContainer.style.setProperty('--page-scale', String(scale));
-            updateButtons();
-            preserveViewportCenter();
           }
           // Re-center on resize to avoid drift when viewport changes
           let resizeTO;
           window.addEventListener('resize', ()=>{
             clearTimeout(resizeTO);
             resizeTO = setTimeout(()=>{
-              preserveViewportCenter();
+              requestAnimationFrame(centerHorizontally);
             }, 80);
           });
           // Center once when the first image is loaded
@@ -132,14 +104,7 @@
             }
           });
           observer.observe(pagesContainer, {childList:true});
-          function updateButtons(){
-            zoomOutBtn.disabled = scale <= MIN_SCALE + 0.001;
-            zoomInBtn.disabled = scale >= MAX_SCALE - 0.001;
-          }
-          zoomOutBtn.addEventListener('click', ()=>{ if(scale > MIN_SCALE){ scale = Math.max(MIN_SCALE, +(scale - 0.1).toFixed(2)); applyScale(); }});
-          zoomInBtn.addEventListener('click', ()=>{ if(scale < MAX_SCALE){ scale = Math.min(MAX_SCALE, +(scale + 0.1).toFixed(2)); applyScale(); }});
-          applyScale();
-          // No thumbnail viewer — simple stacked images only
+          // No zoom or thumbnail viewer — simple stacked images only
         })();
       </script>
   </section>
