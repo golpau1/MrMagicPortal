@@ -86,10 +86,13 @@
             thumbs.push(t);
             thumbStrip.appendChild(t);
           }
+          let lastActiveIdx = -1;
           function setActiveThumb(idx){
+            if(idx === lastActiveIdx) return;
             thumbs.forEach((el,i)=>{ if(i===idx) el.classList.add('active'); else el.classList.remove('active'); });
+            lastActiveIdx = idx;
             if(thumbs[idx]){
-              try{ thumbs[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'}); }catch(e){}
+              try{ thumbs[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'auto'}); }catch(e){}
             }
           }
           // Append images sequentially
@@ -109,26 +112,29 @@
             img.src = src;
           }
           appendNext();
-          // Highlight current page in thumbnail strip as user scrolls
-          const io = new IntersectionObserver((entries)=>{
-            let bestIdx = null; let bestRatio = 0;
-            entries.forEach(e=>{
-              if(e.isIntersecting && e.intersectionRatio > bestRatio){
-                bestRatio = e.intersectionRatio;
-                const id = e.target.id; // page-X
-                const idx = parseInt(id.split('-')[1],10)-1;
-                bestIdx = idx;
-              }
-            });
-            if(bestIdx!=null) setActiveThumb(bestIdx);
-          },{root:null, threshold:[0.2,0.4,0.6,0.8]});
-          const observeTimer = setInterval(()=>{
+          // Smooth, low-chatter sync between scroll and active thumbnail
+          let scrollTicking = false;
+          function updateActiveFromScroll(){
+            scrollTicking = false;
+            // Find image closest to viewport top (offset by 80px for header/back button)
+            const offset = 80;
+            let bestIdx = lastActiveIdx;
+            let bestDelta = Infinity;
             for(let k=0;k<mainImgs.length;k++){
               const el = mainImgs[k];
-              if(el && !el._observed){ io.observe(el); el._observed = true; }
+              if(!el) break; // only consider loaded images in order
+              const rect = el.getBoundingClientRect();
+              const delta = Math.abs(rect.top - offset);
+              if(delta < bestDelta){ bestDelta = delta; bestIdx = k; }
             }
-            if(mainImgs.every(el=>!!el)){ clearInterval(observeTimer); }
-          }, 300);
+            if(bestIdx != null && bestIdx !== lastActiveIdx){ setActiveThumb(bestIdx); }
+          }
+          window.addEventListener('scroll', ()=>{
+            if(!scrollTicking){
+              scrollTicking = true;
+              window.requestAnimationFrame(updateActiveFromScroll);
+            }
+          }, { passive: true });
         })();
       </script>
   </section>
