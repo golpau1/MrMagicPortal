@@ -20,9 +20,15 @@
     .manual-viewer__frame{border:none;border-radius:0;box-shadow:none;background:transparent}
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
     /* Image stack container and scaling */
-    #pdfPages{padding:16px 0; --page-scale:1; overflow-x:auto; text-align:center;}
+    #pdfPages{
+      --page-scale:1;
+      /* Center content and prevent scroll anchoring drift */
+      display:flex;flex-direction:column;align-items:center;
+      padding:16px 96px; /* gutters so fixed controls don't cover content */
+      overflow-x:auto; text-align:center; overflow-anchor:none; scrollbar-gutter:stable both-edges;
+    }
     #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
-    #pdfPages img{display:block;margin:0 auto 24px;width:calc(100% * var(--page-scale));max-width:none;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
+    #pdfPages img{display:block;margin:0 0 24px;width:calc(100% * var(--page-scale));max-width:none;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
     /* Zoom controls */
     .zoom-controls{position:fixed;top:12px;right:12px;z-index:70;display:flex;gap:8px;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:6px}
     .zoom-controls button{background:#fff;border:1px solid #d2d2d2;border-radius:6px;display:grid;place-items:center;width:34px;height:30px;cursor:pointer}
@@ -90,21 +96,29 @@
           let scale = 1;
           const MIN_SCALE = 0.6;
           const MAX_SCALE = 1.8;
+          function centerHorizontally(){
+            const sw = pagesContainer.scrollWidth;
+            const cw = pagesContainer.clientWidth;
+            pagesContainer.scrollLeft = sw > cw ? Math.max(0, (sw - cw) / 2) : 0;
+          }
           function applyScale(){
             // Apply scale
             pagesContainer.style.setProperty('--page-scale', String(scale));
             updateButtons();
-            // After layout, center the content horizontally to prevent left drift
+            // After layout, center the content horizontally (twice to beat anchoring)
             requestAnimationFrame(()=>{
-              const sw = pagesContainer.scrollWidth;
-              const cw = pagesContainer.clientWidth;
-              if (sw > cw) {
-                pagesContainer.scrollLeft = Math.max(0, (sw - cw) / 2);
-              } else {
-                pagesContainer.scrollLeft = 0;
-              }
+              centerHorizontally();
+              requestAnimationFrame(centerHorizontally);
             });
           }
+          // Re-center on resize to avoid drift when viewport changes
+          let resizeTO;
+          window.addEventListener('resize', ()=>{
+            clearTimeout(resizeTO);
+            resizeTO = setTimeout(()=>{
+              requestAnimationFrame(centerHorizontally);
+            }, 80);
+          });
           function updateButtons(){
             zoomOutBtn.disabled = scale <= MIN_SCALE + 0.001;
             zoomInBtn.disabled = scale >= MAX_SCALE - 0.001;
