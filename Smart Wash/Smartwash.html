@@ -50,20 +50,56 @@
         // Show container and loader (use flex for centered stack)
         pagesContainer.style.display = 'flex';
         loadingEl.style.display = 'block';
-        // TODO: Update this list with your actual image paths
-        // Example: 'Smart Wash Manual/SMARTWASH-images-0.jpg', ...
-        const imgs = [];
-        let i = 0;
-        function appendNext(){
-          if(i >= imgs.length){ loadingEl.style.display='none'; return; }
-          const src = imgs[i];
-          const img = new Image();
-          img.alt = 'Smart Wash manual page ' + (i+1);
-          img.onload = function(){ pagesContainer.appendChild(img); i++; requestAnimationFrame(appendNext); };
-          img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
-          img.src = src;
+        // Folder provided by you
+        const folder = 'Smart Wash Manual/';
+        // Try to auto-detect naming pattern by probing a few common prefixes/suffixes
+        const prefixes = [
+          'Smart Wash Operator Manual-images-',
+          'SMART WASH OPERATORS MANUAL-images-',
+          'SMARTWASH-images-',
+          'SMART WASH-',
+          'SmartWash-',
+          'page-',
+          'image-',
+          ''
+        ];
+        const suffixes = ['.jpg','.jpeg','.png'];
+        function probePattern(idx, onFound, onFail){
+          if(idx >= prefixes.length * suffixes.length) return onFail();
+          const p = Math.floor(idx / suffixes.length);
+          const s = idx % suffixes.length;
+          const src = folder + prefixes[p] + 0 + suffixes[s];
+          const testImg = new Image();
+          testImg.onload = ()=> onFound(prefixes[p], suffixes[s]);
+          testImg.onerror = ()=> probePattern(idx+1, onFound, onFail);
+          testImg.src = src;
         }
-        appendNext();
+        function streamImages(prefix, suffix){
+          let i = 0; let successes = 0; let misses = 0;
+          const MAX_MISSES = 1; // stop at first miss after at least one success
+          (function appendNext(){
+            const src = folder + prefix + i + suffix;
+            const img = new Image();
+            img.alt = 'Smart Wash manual page ' + (i+1);
+            img.onload = function(){
+              pagesContainer.appendChild(img);
+              successes++; i++; misses = 0; requestAnimationFrame(appendNext);
+            };
+            img.onerror = function(){
+              misses++;
+              if(successes > 0 && misses >= MAX_MISSES){ loadingEl.style.display='none'; return; }
+              if(successes === 0 && i < 2){ i++; requestAnimationFrame(appendNext); return; }
+              loadingEl.style.display='none';
+            };
+            img.src = src;
+          })();
+        }
+        probePattern(0, (prefix, suffix)=>{
+          streamImages(prefix, suffix);
+        }, ()=>{
+          loadingEl.innerHTML = '<div style="color:#666;font-size:14px">Add your image names in code: set prefix/suffix in Smartwash.html</div>';
+          setTimeout(()=> loadingEl.style.display='none', 2500);
+        });
       })();
     </script>
   </section>
