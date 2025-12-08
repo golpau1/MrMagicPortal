@@ -19,10 +19,14 @@
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
     .manual-viewer__frame{border:none;border-radius:0;box-shadow:none;background:transparent}
     .manual-viewer__frame object{display:block;width:100%;height:1500px}
-    /* pdf.js page canvas styling (preserve natural aspect ratio) */
-    #pdfPages{padding:16px 0;}
+    /* Image stack container and scaling */
+    #pdfPages{padding:16px 0; --page-scale:1; overflow-x:auto;}
     #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
-    #pdfPages img{display:block;margin:0 0 24px;max-width:100%;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
+    #pdfPages img{display:block;margin:0 0 24px;width:calc(100% * var(--page-scale));max-width:none;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
+    /* Zoom controls */
+    .zoom-controls{position:fixed;top:12px;right:12px;z-index:70;display:flex;gap:8px;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:6px}
+    .zoom-controls button{background:#fff;border:1px solid #d2d2d2;border-radius:6px;display:grid;place-items:center;width:34px;height:30px;cursor:pointer}
+    .zoom-controls button:disabled{opacity:.4;cursor:not-allowed}
     /* Removed interactive PDF controls */
     @keyframes spin{to{transform:rotate(360deg)}}
     @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
@@ -37,6 +41,14 @@
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
   <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../Portal%20Page/MrMagic.html';}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
+  <div class="zoom-controls" aria-label="Zoom controls">
+    <button id="zoomOut" title="Zoom out" aria-label="Zoom out">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+    <button id="zoomIn" title="Zoom in" aria-label="Zoom in">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
   <section class="manual-viewer" aria-label="Storm Operators Manual">
     <h2 class="manual-viewer__title">Storm</h2>
     <div class="manual-viewer__frame">
@@ -67,12 +79,28 @@
             img.alt = 'Storm manual page ' + (i+1);
             img.style.display='block';
             img.style.margin='0 0 24px';
-            img.style.maxWidth='100%';
             img.onload = function(){ pagesContainer.appendChild(img); i++; requestAnimationFrame(appendNext); };
             img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
             img.src = src;
           }
           appendNext();
+          // Zoom controls (affect only the image stack)
+          const zoomOutBtn = document.getElementById('zoomOut');
+          const zoomInBtn = document.getElementById('zoomIn');
+          let scale = 1;
+          const MIN_SCALE = 0.6;
+          const MAX_SCALE = 1.8;
+          function applyScale(){
+            pagesContainer.style.setProperty('--page-scale', String(scale));
+            updateButtons();
+          }
+          function updateButtons(){
+            zoomOutBtn.disabled = scale <= MIN_SCALE + 0.001;
+            zoomInBtn.disabled = scale >= MAX_SCALE - 0.001;
+          }
+          zoomOutBtn.addEventListener('click', ()=>{ if(scale > MIN_SCALE){ scale = Math.max(MIN_SCALE, +(scale - 0.1).toFixed(2)); applyScale(); }});
+          zoomInBtn.addEventListener('click', ()=>{ if(scale < MAX_SCALE){ scale = Math.min(MAX_SCALE, +(scale + 0.1).toFixed(2)); applyScale(); }});
+          applyScale();
           // No thumbnail viewer — simple stacked images only
         })();
       </script>
