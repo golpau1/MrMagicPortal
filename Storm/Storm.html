@@ -54,13 +54,8 @@
         const pdfUrl = '../Assets/STORM%20OPERATORS%20MANUAL%2037.pdf';
         const pagesContainer = document.getElementById('pdfPages');
         const fallbackObj = document.getElementById('pdfObjectFallback');
-        // Only switch to pdf.js on small screens (mobile) to address single-page issue
-        const smallWidth = window.matchMedia('(max-width: 900px)').matches;
-        const coarse = window.matchMedia('(pointer:coarse)').matches;
-        const urlParams = new URLSearchParams(location.search);
-        const forceMobile = urlParams.get('mobilePdf') === '1';
-        const usePdfJs = forceMobile || smallWidth || coarse;
-        if(!usePdfJs || !window['pdfjsLib']){ return; }
+        // Always render as stacked images when pdf.js is available (all devices)
+        if(!window['pdfjsLib']){ return; }
         // Hide fallback native viewer
         if(fallbackObj) fallbackObj.style.display = 'none';
         pagesContainer.style.display = 'block';
