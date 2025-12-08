@@ -91,21 +91,15 @@
           const MIN_SCALE = 0.6;
           const MAX_SCALE = 1.8;
           function applyScale(){
-            // Remember center before change
-            const prevScrollCenter = pagesContainer.scrollLeft + pagesContainer.clientWidth/2;
-            const prevScrollWidth = pagesContainer.scrollWidth;
             // Apply scale
             pagesContainer.style.setProperty('--page-scale', String(scale));
             updateButtons();
-            // After layout, recentre horizontally to keep pages in the middle
+            // After layout, center the content horizontally to prevent left drift
             requestAnimationFrame(()=>{
               const sw = pagesContainer.scrollWidth;
               const cw = pagesContainer.clientWidth;
-              if(sw > cw){
-                // Try to preserve proportional center, fallback to absolute center
-                const ratio = prevScrollWidth ? (prevScrollCenter/prevScrollWidth) : 0.5;
-                const newCenter = Math.max(cw/2, sw * ratio);
-                pagesContainer.scrollLeft = Math.max(0, newCenter - cw/2);
+              if (sw > cw) {
+                pagesContainer.scrollLeft = Math.max(0, (sw - cw) / 2);
               } else {
                 pagesContainer.scrollLeft = 0;
               }
