@@ -31,8 +31,9 @@
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
       .manual-viewer__frame object{height:100%;min-height:920px;}
-      /* On small screens, let pages fill the width for readability */
-      #pdfPages img{width:100%;max-width:100%;}
+      /* Mobile: ensure vertical stack and full-width pages */
+      #pdfPages{display:block;padding:16px 0;}
+      #pdfPages img{width:100%;max-width:100%;margin:0 auto 16px;}
     }
   </style>
 </head>
