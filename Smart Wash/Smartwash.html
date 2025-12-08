@@ -17,16 +17,17 @@
     .back-btn:active{transform:translateY(1px)}
     .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0 24px}
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
-    .manual-viewer__frame{border:1px solid #d8d8d8;border-radius:10px;box-shadow:0 4px 14px rgba(0,0,0,0.12);background:#fff}
-    .manual-viewer__frame object{display:block;width:100%;height:1500px}
-    #pdfPages{padding:16px 0;}
-    #pdfPages canvas{display:block;margin:0 auto 24px;max-width:100%;background:#fff;border:1px solid #e1e1e1;border-radius:4px;box-shadow:0 2px 6px rgba(0,0,0,0.08)}
+    .manual-viewer__frame{border:none;border-radius:0;box-shadow:none;background:transparent}
+    /* Centered image stack (desktop 67%, mobile 100%) */
+    #pdfPages{padding:16px 0; display:flex; flex-direction:column; align-items:center;}
+    #pdfPages img{display:block;margin:0 0 24px;width:67%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
     /* Removed interactive PDF controls */
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-      .manual-viewer__frame object{height:100%;min-height:920px;}
+      /* Mobile: vertical stack full width */
+      #pdfPages{display:block;padding:16px 0;}
+      #pdfPages img{width:100%;max-width:100%;margin:0 auto 16px;}
     }
   </style>
 </head>
@@ -37,58 +38,32 @@
   <section class="manual-viewer" aria-label="Smart Wash Operator Manual">
     <h2 class="manual-viewer__title">Smart Wash</h2>
     <div class="manual-viewer__frame">
-      <object id="pdfObjectFallback" data="../Assets/Smart%20Wash%20Operator%20Manual.pdf#view=FitH" type="application/pdf">
-        <p>Cannot display PDF. <a href="../Assets/Smart%20Wash%20Operator%20Manual.pdf">Open manual.</a></p>
-      </object>
       <div id="pdfPages" aria-label="Smart Wash manual full pages" style="display:none;"></div>
       <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
         <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
       </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js" integrity="sha512-WyQnD6G7QqB0uQMnFZqre1H+X1vEZh1MZkJX2uKJQ7npCwQSoE3o1XX6Yw1sqn/w1JvNeh5AO2gdhukwSzpUdg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
       (function(){
-        const pdfUrl = '../Assets/Smart%20Wash%20Operator%20Manual.pdf';
         const pagesContainer = document.getElementById('pdfPages');
-        const fallbackObj = document.getElementById('pdfObjectFallback');
-        const smallWidth = window.matchMedia('(max-width: 900px)').matches;
-        const coarse = window.matchMedia('(pointer:coarse)').matches;
-        const urlParams = new URLSearchParams(location.search);
-        const forceMobile = urlParams.get('mobilePdf') === '1';
-        const usePdfJs = forceMobile || smallWidth || coarse;
-        if(!usePdfJs || !window['pdfjsLib']) return;
-        if(fallbackObj) fallbackObj.style.display='none';
-        pagesContainer.style.display='block';
-        pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
-        pdfjsLib.getDocument(pdfUrl).promise.then(doc=>{
-          const total=doc.numPages; const frame=document.querySelector('.manual-viewer__frame');
-          const loadingEl=document.getElementById('pdfLoading');
-          loadingEl.style.display='block';
-          function computeScale(page){
-            const baseViewport=page.getViewport({scale:1});
-            const availWidth=(frame?frame.clientWidth:window.innerWidth)-32;
-            let scale=availWidth/baseViewport.width; if(scale>1.15) scale=1.15; return scale;
-          }
-          function renderSequential(i){
-            if(i>total){ loadingEl.style.display='none'; console.log('[PDF] Smart Wash pages rendered as images'); return; }
-            doc.getPage(i).then(page=>{
-              const scale=computeScale(page);
-              const viewport=page.getViewport({scale});
-              const canvas=document.createElement('canvas'); const ctx=canvas.getContext('2d'); const ratio=window.devicePixelRatio||1;
-              canvas.width=viewport.width*ratio; canvas.height=viewport.height*ratio; canvas.style.width=viewport.width+'px'; canvas.style.height=viewport.height+'px';
-              page.render({canvasContext:ctx,viewport,transform:[ratio,0,0,ratio,0,0]}).promise.then(()=>{
-                const img=document.createElement('img');
-                img.src=canvas.toDataURL('image/png');
-                img.alt='Smart Wash manual page '+i;
-                img.style.display='block'; img.style.margin='0 auto 28px'; img.style.maxWidth='100%'; img.style.border='1px solid #e1e1e1'; img.style.borderRadius='4px'; img.style.boxShadow='0 2px 6px rgba(0,0,0,0.08)';
-                pagesContainer.appendChild(img);
-                canvas.width=0; canvas.height=0;
-                requestAnimationFrame(()=>renderSequential(i+1));
-              });
-            }).catch(err=>{ console.error('[PDF] Smart Wash page render error',i,err); requestAnimationFrame(()=>renderSequential(i+1)); });
-          }
-          renderSequential(1);
-        }).catch(err=>{ console.error('[PDFJS] Smart Wash image render fail',err); if(fallbackObj) fallbackObj.style.display='block'; pagesContainer.style.display='none'; });
+        const loadingEl = document.getElementById('pdfLoading');
+        // Show container and loader (use flex for centered stack)
+        pagesContainer.style.display = 'flex';
+        loadingEl.style.display = 'block';
+        // TODO: Update this list with your actual image paths
+        // Example: 'Smart Wash Manual/SMARTWASH-images-0.jpg', ...
+        const imgs = [];
+        let i = 0;
+        function appendNext(){
+          if(i >= imgs.length){ loadingEl.style.display='none'; return; }
+          const src = imgs[i];
+          const img = new Image();
+          img.alt = 'Smart Wash manual page ' + (i+1);
+          img.onload = function(){ pagesContainer.appendChild(img); i++; requestAnimationFrame(appendNext); };
+          img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
+          img.src = src;
+        }
+        appendNext();
       })();
     </script>
   </section>
