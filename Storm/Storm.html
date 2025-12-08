@@ -27,7 +27,7 @@
     .thumbs{flex:0 0 140px;width:140px;position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;border:1px solid #eee;border-radius:8px;background:#fff;padding:8px}
     .thumbs h3{margin:0 0 8px;font-size:12px;font-weight:600;color:#444}
     .thumbs img{display:block;width:100%;height:auto;margin:0 0 8px;border:1px solid #ddd;border-radius:4px;cursor:pointer}
-    .thumbs img.active{outline:2px solid #003448; outline-offset:1px}
+    .thumbs img.active{outline:none;border-color:transparent}
     .manual-content{flex:1;min-width:0}
     @media (max-width: 900px){ .manual-layout{display:block} .thumbs{display:none} }
     /* Removed interactive PDF controls */
@@ -88,6 +88,9 @@
           }
           function setActiveThumb(idx){
             thumbs.forEach((el,i)=>{ if(i===idx) el.classList.add('active'); else el.classList.remove('active'); });
+            if(thumbs[idx]){
+              try{ thumbs[idx].scrollIntoView({block:'nearest', inline:'nearest', behavior:'smooth'}); }catch(e){}
+            }
           }
           // Append images sequentially
           const mainImgs = new Array(total);
