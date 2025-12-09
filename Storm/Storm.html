@@ -18,7 +18,6 @@
     .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0}
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
     .manual-viewer__frame{border:none;border-radius:0;box-shadow:none;background:transparent}
-    .manual-viewer__frame object{display:block;width:100%;height:1500px}
     /* Image stack container */
     #pdfPages{padding:16px 0; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;}
     /* Subtle page number */
@@ -26,14 +25,12 @@
     .page-number{position:absolute; top:6px; left:-24px; font-size:12px; color:#555; padding:0; border:none; background:transparent; pointer-events:none;}
     #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
     #pdfPages img{display:block;margin:0 0 24px;width:100%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
-    /* Zoom controls removed */
-    /* Removed interactive PDF controls */
+    
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media (max-width: 900px){ .manual-viewer__frame object{height:1100px} }
+    
     /* Mobile: turn frame into scroll container with full viewport height for thumb scrolling */
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-      .manual-viewer__frame object{height:100%;min-height:920px;}
       /* Mobile: ensure vertical stack and full-width pages */
       #pdfPages{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 0;width:100%;}
       .page-item{width:100%;max-width:900px;margin:0 auto;}
@@ -316,46 +313,18 @@
               pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
             }
           });
-          // Helper: center horizontally if content wider than viewport
-          function centerHorizontally(){
-            const sw = pagesContainer.scrollWidth;
-            const cw = pagesContainer.clientWidth;
-            pagesContainer.scrollLeft = sw > cw ? Math.max(0, (sw - cw) / 2) : 0;
-          }
-          // Re-center on resize to avoid drift when viewport changes
-          let resizeTO;
-          window.addEventListener('resize', ()=>{
-            clearTimeout(resizeTO);
-            resizeTO = setTimeout(()=>{
-              requestAnimationFrame(centerHorizontally);
-            }, 80);
-          });
-          // Center once when the first image is loaded
-          const observer = new MutationObserver((mutations)=>{
-            for(const m of mutations){
-              for(const n of m.addedNodes){
-                if(n.tagName === 'IMG'){
-                  // First image: center to start
-                  if(pagesContainer.querySelectorAll('img').length === 1){
-                    requestAnimationFrame(centerHorizontally);
-                  }
-                }
-              }
-            }
-          });
-          observer.observe(pagesContainer, {childList:true});
+          // No horizontal centering helper needed; flex layout centers content.
           // No zoom or thumbnail viewer — simple stacked images only
         })();
       </script>
       <style>
-        /* Subtle scrollbar styling to match back button aesthetic */
+        /* Subtle scrollbar styling */
         #pageMenu::-webkit-scrollbar{width:8px;height:8px}
         #pageMenu::-webkit-scrollbar-track{background:#f4f4f4;border-radius:6px}
         #pageMenu::-webkit-scrollbar-thumb{background:#c8c8c8;border-radius:6px;border:1px solid #e5e5e5}
         #pageMenu{-webkit-overflow-scrolling:touch}
         /* Mobile: remove blue highlight/outline */
         .page-controls, .page-controls *{ -webkit-tap-highlight-color: transparent; }
-        #pageButton:focus, #pageButtonNumber:focus, #pageButtonIcon:focus { outline: none; }
         #pageMenu button:focus{ outline:none; background:#f0f0f0; }
       </style>
   </section>
