@@ -35,6 +35,16 @@
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
   <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../Portal%20Page/MrMagic.html';}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
+  <div class="page-controls" aria-label="Page and download controls" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+    <div style="display:flex;gap:8px;align-items:center">
+      <span style="font-size:13px;font-weight:600">Page</span>
+      <select id="pageSelect" title="Select page" aria-label="Select page" style="font-family:'VCR OSD Mono', monospace;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 8px;font-size:13px;font-weight:600;min-width:74px;cursor:pointer"></select>
+    </div>
+    <a href="../Assets/Smart%20Wash%20Operator%20Manual.pdf" download class="download-btn" title="Download PDF" aria-label="Download Smart Wash PDF"
+       style="display:inline-block;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;color:#111;text-decoration:none;">
+      Download PDF
+    </a>
+  </div>
   <section class="manual-viewer" aria-label="Smart Wash Operator Manual">
     <h2 class="manual-viewer__title">Smart Wash</h2>
     <div class="manual-viewer__frame">
@@ -47,6 +57,7 @@
       (function(){
         const pagesContainer = document.getElementById('pdfPages');
         const loadingEl = document.getElementById('pdfLoading');
+        const pageSelect = document.getElementById('pageSelect');
         // Show container and loader (use flex for centered stack)
         pagesContainer.style.display = 'flex';
         loadingEl.style.display = 'block';
@@ -77,12 +88,14 @@
         function streamImages(prefix, suffix){
           let i = 0; let successes = 0; let misses = 0;
           const MAX_MISSES = 1; // stop at first miss after at least one success
+          const imgEls = [];
           (function appendNext(){
             const src = folder + prefix + i + suffix;
             const img = new Image();
             img.alt = 'Smart Wash manual page ' + (i+1);
             img.onload = function(){
               pagesContainer.appendChild(img);
+              imgEls.push(img);
               successes++; i++; misses = 0; requestAnimationFrame(appendNext);
             };
             img.onerror = function(){
@@ -93,6 +106,27 @@
             };
             img.src = src;
           })();
+          // Populate page selector once we’ve loaded at least the first image
+          const buildSelect = ()=>{
+            const count = imgEls.length;
+            if(count === 0) return;
+            const frag = document.createDocumentFragment();
+            for(let p=1;p<=count;p++){
+              const opt = document.createElement('option');
+              opt.value = String(p);
+              opt.textContent = String(p);
+              frag.appendChild(opt);
+            }
+            pageSelect.innerHTML = '';
+            pageSelect.appendChild(frag);
+          };
+          const observer = new MutationObserver(()=>{ buildSelect(); });
+          observer.observe(pagesContainer, {childList:true});
+          pageSelect.addEventListener('change', ()=>{
+            const idx = Math.max(0, Math.min(imgEls.length-1, parseInt(pageSelect.value,10)-1));
+            const el = imgEls[idx];
+            if(el){ el.scrollIntoView({behavior:'smooth',block:'start'}); }
+          });
         }
         probePattern(0, (prefix, suffix)=>{
           streamImages(prefix, suffix);
