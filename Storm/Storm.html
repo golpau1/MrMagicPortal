@@ -81,40 +81,61 @@
             }
             pageSelect.appendChild(frag);
           })();
-          // Append images sequentially
+          // Smooth mobile loading: lazy load and batch append
           let i = 0;
           const imgEls = [];
           let pendingIndex = null;
-          function appendNext(){
-            if(i >= imgs.length){ loadingEl.style.display='none'; return; }
-            const src = imgs[i];
-            const img = new Image();
-            img.alt = 'Storm manual page ' + (i+1);
-            img.style.display='block';
-            img.style.margin='0 0 24px';
-            img.onload = function(){
-              const wrapper = document.createElement('div');
-              wrapper.className = 'page-item';
-              const label = document.createElement('span');
-              label.className = 'page-number';
-              label.textContent = String(i+1);
-              wrapper.appendChild(img);
-              wrapper.appendChild(label);
-              pagesContainer.appendChild(wrapper);
-              imgEls.push(img);
-              // If a target page was selected before it loaded, jump once available
-              if(pendingIndex !== null && pendingIndex < imgEls.length){
-                const el = imgEls[pendingIndex];
-                if(el){ el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'}); }
-                pendingIndex = null;
-              }
-              i++;
-              requestAnimationFrame(appendNext);
-            };
-            img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
-            img.src = src;
+          const isMobile = window.matchMedia('(max-width: 600px)').matches;
+          const fragBatchSize = isMobile ? 4 : 8; // smaller batches on mobile
+          function createWrapper(idx, img){
+            const wrapper = document.createElement('div');
+            wrapper.className = 'page-item';
+            const label = document.createElement('span');
+            label.className = 'page-number';
+            label.textContent = String(idx+1);
+            wrapper.appendChild(img);
+            wrapper.appendChild(label);
+            return wrapper;
           }
-          appendNext();
+          function appendBatch(){
+            if(i >= imgs.length){ loadingEl.style.display='none'; return; }
+            const frag = document.createDocumentFragment();
+            let count = 0;
+            while(i < imgs.length && count < fragBatchSize){
+              const src = imgs[i];
+              const img = new Image();
+              img.alt = 'Storm manual page ' + (i+1);
+              img.loading = 'lazy';
+              img.decoding = 'async';
+              img.style.display='block';
+              img.style.margin='0 0 24px';
+              img.onload = (function(idx){
+                return function(){
+                  imgEls[idx] = img;
+                  if(pendingIndex !== null && pendingIndex === idx){
+                    const el = imgEls[pendingIndex];
+                    if(el){ el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'}); }
+                    pendingIndex = null;
+                  }
+                };
+              })(i);
+              img.onerror = function(){ console.warn('[IMG] Missing image', src); };
+              img.src = src;
+              frag.appendChild(createWrapper(i, img));
+              i++; count++;
+            }
+            pagesContainer.appendChild(frag);
+            if(i < imgs.length){
+              if('requestIdleCallback' in window){
+                requestIdleCallback(()=> requestAnimationFrame(appendBatch));
+              } else {
+                setTimeout(()=> requestAnimationFrame(appendBatch), 30);
+              }
+            } else {
+              loadingEl.style.display='none';
+            }
+          }
+          appendBatch();
           // Handle page selection changes
           pageSelect.addEventListener('change', ()=>{
             const idx = Math.max(0, Math.min(total-1, parseInt(pageSelect.value,10)-1));
