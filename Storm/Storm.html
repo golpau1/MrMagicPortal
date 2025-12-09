@@ -187,6 +187,7 @@
           // Smooth mobile loading: lazy load and batch append
           let i = 0;
           const imgEls = [];
+          const wrapperEls = [];
           let pendingIndex = null;
           const isMobile = window.matchMedia('(max-width: 600px)').matches;
           let fragBatchSize = isMobile ? 4 : 8; // smaller batches on mobile
@@ -198,6 +199,7 @@
             label.textContent = String(idx+1);
             wrapper.appendChild(img);
             wrapper.appendChild(label);
+            wrapperEls[idx] = wrapper;
             return wrapper;
           }
           let fastForwardTarget = null;
@@ -217,7 +219,7 @@
                 return function(){
                   imgEls[idx] = img;
                   if(pendingIndex !== null && pendingIndex === idx){
-                    const el = imgEls[pendingIndex];
+                    const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
                     if(el){ el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'}); }
                     pendingIndex = null;
                   }
@@ -230,7 +232,7 @@
             }
             pagesContainer.appendChild(frag);
             if(fastForwardTarget !== null && imgEls[fastForwardTarget]){
-              const el = imgEls[fastForwardTarget];
+              const el = wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget];
               el && el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
               fastForwardTarget = null;
               loadingEl.style.display='none';
@@ -248,8 +250,11 @@
           appendBatch();
           // Handle page selection changes
           function loadUntil(targetIdx){
-            if(imgEls[targetIdx]){
-              imgEls[targetIdx].scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+            const existingWrapper = wrapperEls[targetIdx];
+            const existingImg = imgEls[targetIdx];
+            if(existingWrapper || existingImg){
+              const el = existingWrapper || existingImg;
+              el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
               return;
             }
             // Increase batch size temporarily to reach the target faster
