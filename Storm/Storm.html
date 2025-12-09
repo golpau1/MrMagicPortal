@@ -33,8 +33,11 @@
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
       /* Mobile: ensure vertical stack and full-width pages */
       #pdfPages{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 0;width:100%;}
-      .page-item{width:100%;max-width:900px;margin:0 auto;}
+      /* Make pages slightly narrower on mobile to reveal left-side numbers */
+      .page-item{width:92%;max-width:900px;margin:0 auto;}
       #pdfPages img{width:100%;max-width:900px;margin:0 0 16px;}
+      /* Slightly adjust number position for small screens */
+      .page-number{left:-18px}
     }
   </style>
 </head>
