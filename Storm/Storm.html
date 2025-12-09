@@ -46,7 +46,10 @@
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
   <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center">
     <span style="font-size:13px;font-weight:600">Page</span>
-    <select id="pageSelect" title="Select page" aria-label="Select page" style="font-family:'VCR OSD Mono', monospace;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 8px;font-size:13px;font-weight:600;min-width:74px;cursor:pointer"></select>
+    <button id="pageButton" title="Select page" aria-haspopup="listbox" aria-expanded="false"
+      style="font-family:'VCR OSD Mono', monospace;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;min-width:64px;cursor:pointer">1</button>
+    <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fff;border:1px solid #d2d2d2;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:280px;overflow:auto;min-width:220px">
+    </div>
   </div>
   
   <section class="manual-viewer" aria-label="Storm Operators Manual">
@@ -61,7 +64,8 @@
           const pagesContainer = document.getElementById('pdfPages');
           const loadingEl = document.getElementById('pdfLoading');
           const frame = document.querySelector('.manual-viewer__frame');
-          const pageSelect = document.getElementById('pageSelect');
+          const pageButton = document.getElementById('pageButton');
+          const pageMenu = document.getElementById('pageMenu');
           // Show container and loader (use flex so align-items:center works)
           pagesContainer.style.display = 'flex';
           loadingEl.style.display = 'block';
@@ -71,8 +75,7 @@
           const imgs = [];
           for(let i=0;i<total;i++) imgs.push(basePath + i + '.jpg');
           // Populate page selector with titles where provided
-          (function(){
-            const titles = {
+          const titles = {
               2: 'Contents',
               5: 'Maintenance',
               6: 'Storm Spare Parts',
@@ -150,15 +153,26 @@
               78: 'Boom Position Adjustment at GROUND',
               79: 'Boom Position Adjustment at GROUND'
             };
+          (function buildMenu(){
             const frag = document.createDocumentFragment();
             for(let p=1;p<=total;p++){
-              const opt = document.createElement('option');
-              opt.value = String(p);
+              const item = document.createElement('button');
+              item.type = 'button';
+              item.role = 'option';
+              item.setAttribute('data-page', String(p));
+              item.style.cssText = "display:block;width:100%;text-align:left;padding:8px 10px;background:#fff;border:none;border-bottom:1px solid #eee;font-family:'VCR OSD Mono', monospace;font-size:13px;cursor:pointer";
               const title = titles[p];
-              opt.textContent = title ? `${title} – ${p}` : String(p);
-              frag.appendChild(opt);
+              item.textContent = title ? `${p} – ${title}` : String(p);
+              item.addEventListener('click', ()=>{
+                pageButton.textContent = String(p);
+                pageButton.setAttribute('aria-expanded','false');
+                pageMenu.style.display = 'none';
+                const idx = p - 1;
+                loadUntil(idx);
+              });
+              frag.appendChild(item);
             }
-            pageSelect.appendChild(frag);
+            pageMenu.appendChild(frag);
           })();
           // Smooth mobile loading: lazy load and batch append
           let i = 0;
@@ -238,9 +252,23 @@
             // Restore batch size after some time
             setTimeout(()=>{ fragBatchSize = originalBatch; }, 1500);
           }
-          pageSelect.addEventListener('change', ()=>{
-            const idx = Math.max(0, Math.min(imgs.length-1, parseInt(pageSelect.value,10)-1));
-            loadUntil(idx);
+          // Toggle menu
+          pageButton.addEventListener('click', ()=>{
+            const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+            if(expanded){
+              pageButton.setAttribute('aria-expanded','false');
+              pageMenu.style.display = 'none';
+            } else {
+              pageButton.setAttribute('aria-expanded','true');
+              pageMenu.style.display = 'block';
+            }
+          });
+          // Close menu on outside click
+          document.addEventListener('click', (e)=>{
+            if(!pageMenu.contains(e.target) && e.target !== pageButton){
+              pageButton.setAttribute('aria-expanded','false');
+              pageMenu.style.display = 'none';
+            }
           });
           // Helper: center horizontally if content wider than viewport
           function centerHorizontally(){
