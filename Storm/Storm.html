@@ -41,9 +41,12 @@
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
   <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../Portal%20Page/MrMagic.html';}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
+  <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center">
+    <span style="font-size:13px;font-weight:600">Page</span>
+    <select id="pageSelect" title="Select page" aria-label="Select page" style="font-family:'VCR OSD Mono', monospace;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 8px;font-size:13px;font-weight:600;min-width:74px;cursor:pointer"></select>
+  </div>
   
   <section class="manual-viewer" aria-label="Storm Operators Manual">
-    <h2 class="manual-viewer__title">Storm</h2>
     <div class="manual-viewer__frame">
       <div id="pdfPages" aria-label="Storm manual full pages" style="display:none;"></div>
       <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
@@ -55,6 +58,7 @@
           const pagesContainer = document.getElementById('pdfPages');
           const loadingEl = document.getElementById('pdfLoading');
           const frame = document.querySelector('.manual-viewer__frame');
+          const pageSelect = document.getElementById('pageSelect');
           // Show container and loader (use flex so align-items:center works)
           pagesContainer.style.display = 'flex';
           loadingEl.style.display = 'block';
@@ -63,8 +67,21 @@
           const basePath = 'Storm Manual/STORM OPERATORS MANUAL 37-images-';
           const imgs = [];
           for(let i=0;i<total;i++) imgs.push(basePath + i + '.jpg');
+          // Populate page selector 1..total
+          (function(){
+            const frag = document.createDocumentFragment();
+            for(let p=1;p<=total;p++){
+              const opt = document.createElement('option');
+              opt.value = String(p);
+              opt.textContent = String(p);
+              frag.appendChild(opt);
+            }
+            pageSelect.appendChild(frag);
+          })();
           // Append images sequentially
           let i = 0;
+          const imgEls = [];
+          let pendingIndex = null;
           function appendNext(){
             if(i >= imgs.length){ loadingEl.style.display='none'; return; }
             const src = imgs[i];
@@ -72,11 +89,33 @@
             img.alt = 'Storm manual page ' + (i+1);
             img.style.display='block';
             img.style.margin='0 0 24px';
-            img.onload = function(){ pagesContainer.appendChild(img); i++; requestAnimationFrame(appendNext); };
+            img.onload = function(){
+              pagesContainer.appendChild(img);
+              imgEls.push(img);
+              // If a target page was selected before it loaded, jump once available
+              if(pendingIndex !== null && pendingIndex < imgEls.length){
+                const el = imgEls[pendingIndex];
+                if(el){ el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'}); }
+                pendingIndex = null;
+              }
+              i++;
+              requestAnimationFrame(appendNext);
+            };
             img.onerror = function(){ console.warn('[IMG] Missing image', src); i++; requestAnimationFrame(appendNext); };
             img.src = src;
           }
           appendNext();
+          // Handle page selection changes
+          pageSelect.addEventListener('change', ()=>{
+            const idx = Math.max(0, Math.min(total-1, parseInt(pageSelect.value,10)-1));
+            const el = imgEls[idx];
+            if(el){
+              el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+            } else {
+              pendingIndex = idx; // will scroll once that image is loaded
+              loadingEl.style.display = 'block';
+            }
+          });
           // Helper: center horizontally if content wider than viewport
           function centerHorizontally(){
             const sw = pagesContainer.scrollWidth;
