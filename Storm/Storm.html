@@ -44,7 +44,7 @@
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
   <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../Portal%20Page/MrMagic.html';}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
-  <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:6px 10px;display:flex;gap:8px;align-items:center;cursor:pointer">
+  <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:6px 10px;display:flex;gap:8px;align-items:center;cursor:pointer;box-sizing:border-box">
     <span style="font-size:14px;font-weight:700">Page</span>
     <button id="pageButton" title="Select page" aria-haspopup="listbox" aria-expanded="false"
       style="font-family:'VCR OSD Mono', monospace;background:transparent;border:none;border-radius:0;padding:0;font-size:14px;font-weight:700;min-width:auto;cursor:pointer;display:flex;align-items:center;gap:6px">
@@ -53,7 +53,7 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
     </button>
-    <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fff;border:1px solid #d2d2d2;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:420px;overflow:auto;min-width:220px">
+    <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:420px;overflow:auto;min-width:220px">
     </div>
   </div>
   
@@ -340,6 +340,13 @@
           // No zoom or thumbnail viewer — simple stacked images only
         })();
       </script>
+      <style>
+        /* Subtle scrollbar styling to match back button aesthetic */
+        #pageMenu::-webkit-scrollbar{width:8px;height:8px}
+        #pageMenu::-webkit-scrollbar-track{background:#f4f4f4;border-radius:6px}
+        #pageMenu::-webkit-scrollbar-thumb{background:#c8c8c8;border-radius:6px;border:1px solid #e5e5e5}
+        #pageMenu{-webkit-overflow-scrolling:touch}
+      </style>
   </section>
 </body>
 </html>
