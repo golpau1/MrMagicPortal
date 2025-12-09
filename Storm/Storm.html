@@ -21,7 +21,7 @@
     /* Image stack container */
     #pdfPages{padding:16px 0; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;}
     /* Subtle page number */
-    .page-item{position:relative; width:67%; max-width:900px; margin:0 auto;}
+    .page-item{position:relative; width:67%; max-width:900px; margin:0 auto; scroll-margin-top:72px}
     .page-number{position:absolute; top:6px; left:-24px; font-size:12px; color:#555; padding:0; border:none; background:transparent; pointer-events:none;}
     #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
     #pdfPages img{display:block;margin:0 0 24px;width:100%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
@@ -218,7 +218,13 @@
                   imgEls[idx] = img;
                   if(pendingIndex !== null && pendingIndex === idx){
                     const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
-                    if(el){ el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'}); }
+                    if(el){
+                      requestAnimationFrame(()=>{
+                        requestAnimationFrame(()=>{
+                          el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+                        });
+                      });
+                    }
                     pendingIndex = null;
                   }
                 };
@@ -231,7 +237,13 @@
             pagesContainer.appendChild(frag);
             if(fastForwardTarget !== null && (wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget])){
               const el = wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget];
-              el && el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              if(el){
+                requestAnimationFrame(()=>{
+                  requestAnimationFrame(()=>{
+                    el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+                  });
+                });
+              }
               fastForwardTarget = null;
               loadingEl.style.display='none';
             }
@@ -252,7 +264,11 @@
             const existingImg = imgEls[targetIdx];
             if(existingWrapper || existingImg){
               const el = existingWrapper || existingImg;
-              el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              requestAnimationFrame(()=>{
+                requestAnimationFrame(()=>{
+                  el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+                });
+              });
               return;
             }
             // Increase batch size temporarily to reach the target faster
