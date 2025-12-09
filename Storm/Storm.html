@@ -47,7 +47,12 @@
   <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:6px 8px;display:flex;gap:8px;align-items:center">
     <span style="font-size:13px;font-weight:600">Page</span>
     <button id="pageButton" title="Select page" aria-haspopup="listbox" aria-expanded="false"
-      style="font-family:'VCR OSD Mono', monospace;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;min-width:64px;cursor:pointer">1</button>
+      style="font-family:'VCR OSD Mono', monospace;background:#fff;border:1px solid #d2d2d2;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:600;min-width:64px;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <span id="pageButtonNumber">1</span>
+      <span aria-hidden="true" id="pageButtonIcon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
     <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fff;border:1px solid #d2d2d2;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:280px;overflow:auto;min-width:220px">
     </div>
   </div>
@@ -66,6 +71,8 @@
           const frame = document.querySelector('.manual-viewer__frame');
           const pageButton = document.getElementById('pageButton');
           const pageMenu = document.getElementById('pageMenu');
+          const pageButtonNumber = document.getElementById('pageButtonNumber');
+          const pageButtonIcon = document.getElementById('pageButtonIcon');
           // Show container and loader (use flex so align-items:center works)
           pagesContainer.style.display = 'flex';
           loadingEl.style.display = 'block';
@@ -164,9 +171,11 @@
               const title = titles[p];
               item.textContent = title ? `${p} – ${title}` : String(p);
               item.addEventListener('click', ()=>{
-                pageButton.textContent = String(p);
+                pageButtonNumber.textContent = String(p);
                 pageButton.setAttribute('aria-expanded','false');
                 pageMenu.style.display = 'none';
+                // set icon to down when closed
+                pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
                 const idx = p - 1;
                 loadUntil(idx);
               });
@@ -258,9 +267,13 @@
             if(expanded){
               pageButton.setAttribute('aria-expanded','false');
               pageMenu.style.display = 'none';
+              // set icon to down
+              pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
             } else {
               pageButton.setAttribute('aria-expanded','true');
               pageMenu.style.display = 'block';
+              // set icon to up
+              pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>';
             }
           });
           // Close menu on outside click
@@ -268,6 +281,8 @@
             if(!pageMenu.contains(e.target) && e.target !== pageButton){
               pageButton.setAttribute('aria-expanded','false');
               pageMenu.style.display = 'none';
+              // set icon to down when closed
+              pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
             }
           });
           // Helper: center horizontally if content wider than viewport
