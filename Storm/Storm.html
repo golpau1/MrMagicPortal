@@ -86,7 +86,7 @@
           const imgEls = [];
           let pendingIndex = null;
           const isMobile = window.matchMedia('(max-width: 600px)').matches;
-          const fragBatchSize = isMobile ? 4 : 8; // smaller batches on mobile
+          let fragBatchSize = isMobile ? 4 : 8; // smaller batches on mobile
           function createWrapper(idx, img){
             const wrapper = document.createElement('div');
             wrapper.className = 'page-item';
@@ -97,6 +97,7 @@
             wrapper.appendChild(label);
             return wrapper;
           }
+          let fastForwardTarget = null;
           function appendBatch(){
             if(i >= imgs.length){ loadingEl.style.display='none'; return; }
             const frag = document.createDocumentFragment();
@@ -125,11 +126,17 @@
               i++; count++;
             }
             pagesContainer.appendChild(frag);
+            if(fastForwardTarget !== null && imgEls[fastForwardTarget]){
+              const el = imgEls[fastForwardTarget];
+              el && el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              fastForwardTarget = null;
+              loadingEl.style.display='none';
+            }
             if(i < imgs.length){
-              if('requestIdleCallback' in window){
+              if('requestIdleCallback' in window && fastForwardTarget === null){
                 requestIdleCallback(()=> requestAnimationFrame(appendBatch));
               } else {
-                setTimeout(()=> requestAnimationFrame(appendBatch), 30);
+                setTimeout(()=> requestAnimationFrame(appendBatch), fastForwardTarget === null ? 30 : 0);
               }
             } else {
               loadingEl.style.display='none';
@@ -137,15 +144,24 @@
           }
           appendBatch();
           // Handle page selection changes
-          pageSelect.addEventListener('change', ()=>{
-            const idx = Math.max(0, Math.min(total-1, parseInt(pageSelect.value,10)-1));
-            const el = imgEls[idx];
-            if(el){
-              el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
-            } else {
-              pendingIndex = idx; // will scroll once that image is loaded
-              loadingEl.style.display = 'block';
+          function loadUntil(targetIdx){
+            if(imgEls[targetIdx]){
+              imgEls[targetIdx].scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              return;
             }
+            // Increase batch size temporarily to reach the target faster
+            const originalBatch = fragBatchSize;
+            fragBatchSize = Math.max(fragBatchSize, 12);
+            fastForwardTarget = targetIdx;
+            loadingEl.style.display = 'block';
+            // Kick the appender quickly until the target is available
+            setTimeout(()=> requestAnimationFrame(appendBatch), 0);
+            // Restore batch size after some time
+            setTimeout(()=>{ fragBatchSize = originalBatch; }, 1500);
+          }
+          pageSelect.addEventListener('change', ()=>{
+            const idx = Math.max(0, Math.min(imgs.length-1, parseInt(pageSelect.value,10)-1));
+            loadUntil(idx);
           });
           // Helper: center horizontally if content wider than viewport
           function centerHorizontally(){
