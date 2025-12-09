@@ -51,6 +51,8 @@
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </span>
     </button>
+    <button id="loadAllBtn" type="button" title="Load all pages"
+      style="font-family:'VCR OSD Mono', monospace;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:600;cursor:pointer">Load All</button>
     <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:420px;overflow:auto;min-width:220px;-webkit-tap-highlight-color: transparent">
     </div>
   </div>
@@ -72,6 +74,7 @@
           const pageButtonNumber = document.getElementById('pageButtonNumber');
           const pageButtonIcon = document.getElementById('pageButtonIcon');
           const pageControls = document.querySelector('.page-controls');
+          const loadAllBtn = document.getElementById('loadAllBtn');
           // Show container and loader (use flex so align-items:center works)
           pagesContainer.style.display = 'flex';
           loadingEl.style.display = 'block';
@@ -188,7 +191,8 @@
           const wrapperEls = [];
           let pendingIndex = null;
           const isMobile = window.matchMedia('(max-width: 600px)').matches;
-          let fragBatchSize = isMobile ? 4 : 8; // smaller batches on mobile
+          let fragBatchSize = isMobile ? 4 : 8; // default batch size
+          let eagerAll = false; // when true, load all pages immediately
           function createWrapper(idx, img){
             const wrapper = document.createElement('div');
             wrapper.className = 'page-item';
@@ -248,7 +252,10 @@
               loadingEl.style.display='none';
             }
             if(i < imgs.length){
-              if('requestIdleCallback' in window && fastForwardTarget === null){
+              if(eagerAll){
+                // load as fast as possible
+                setTimeout(()=> requestAnimationFrame(appendBatch), 0);
+              } else if('requestIdleCallback' in window && fastForwardTarget === null){
                 requestIdleCallback(()=> requestAnimationFrame(appendBatch));
               } else {
                 setTimeout(()=> requestAnimationFrame(appendBatch), fastForwardTarget === null ? 30 : 0);
@@ -282,6 +289,13 @@
             // Restore batch size after some time
             setTimeout(()=>{ fragBatchSize = originalBatch; }, 1500);
           }
+          // Eager load all pages on demand
+          loadAllBtn.addEventListener('click', ()=>{
+            eagerAll = true;
+            fragBatchSize = Math.max(fragBatchSize, 24);
+            loadingEl.style.display = 'block';
+            setTimeout(()=> requestAnimationFrame(appendBatch), 0);
+          });
           // Toggle menu
           function toggleMenu(force){
             const expanded = pageButton.getAttribute('aria-expanded') === 'true';
