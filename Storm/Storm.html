@@ -70,13 +70,92 @@
           const basePath = 'Storm Manual/STORM OPERATORS MANUAL 37-images-';
           const imgs = [];
           for(let i=0;i<total;i++) imgs.push(basePath + i + '.jpg');
-          // Populate page selector 1..total
+          // Populate page selector with titles where provided
           (function(){
+            const titles = {
+              2: 'Contents',
+              5: 'Maintenance',
+              6: 'Storm Spare Parts',
+              7: 'Tips',
+              8: 'Pressure Settings',
+              9: 'Pressure Settings',
+              10: 'Pressure Settings',
+              11: 'ReBoot',
+              12: 'Machine / Wash Failure',
+              13: 'Gantry Reposition',
+              14: 'Filters',
+              15: 'Air Filters',
+              16: 'Fan Filter Clean',
+              17: 'Belt Adjustment',
+              18: 'High Pressure Pump Oil Change',
+              19: 'Under body Valve Lubrication',
+              20: 'Changeover Valve Lubrication',
+              21: 'Grease Boom Swivels',
+              22: 'Grease Undercarriage Bearings',
+              23: 'Tractor Feed Lubrication',
+              24: 'Blower Parts Lubrication',
+              25: 'Clean Gantry Photo Eyes',
+              26: 'Wax Solenoid',
+              27: 'Boom Dump Valve',
+              28: 'Boom Dump Valve',
+              29: '3/4" High Pressure Check Valve',
+              30: 'Mars Note Validator',
+              31: 'Mars Note Validator Fault Codes',
+              32: 'Coin Validator Removal',
+              33: 'Coin Validator Cleaning',
+              34: 'Coin Validator',
+              35: 'Coin Validator',
+              36: 'Power Supply 240Vac Removal',
+              37: 'Sensors',
+              38: 'Sensors Beam Home & Beam End',
+              39: 'Sensors',
+              40: 'Sensors Y Home & Y End',
+              41: 'Sensors',
+              42: 'Sensors Z Home',
+              43: 'Sensors Boom Light',
+              44: 'Sensors Underbody Test',
+              45: 'Sensors Underbody Test (Water In Line)',
+              46: 'Sensors Underbody Test (Switch Adjustment)',
+              47: 'Electronics',
+              48: 'Electronics',
+              49: 'Electronics',
+              50: 'Safety Timer',
+              51: 'Safety Timer (Omron)',
+              52: 'Cabinet Wiring Connections',
+              53: 'Cabinet Wiring Connections',
+              54: 'Cabinet Wiring Connections',
+              55: 'Gantry Wiring Connections',
+              56: 'Gantry Wiring Connections',
+              57: 'Fault Procedures',
+              58: 'Jet Cleaning',
+              59: 'Product Venturi’s',
+              60: 'Product Metering Settings',
+              61: 'Product Tip Settings Standard',
+              62: 'Product Tip Settings',
+              63: 'Gantry Jet Location & Sizes',
+              64: 'Boom Turbo Sizes',
+              65: 'Boom Presoak Jet Sizes',
+              66: 'Boom Presoak Top Jet Sizes',
+              67: 'Wash Jet Sizes',
+              68: 'Inverter Settings',
+              69: 'Inverter Settings',
+              70: 'Menu Explanation',
+              71: 'Menu Explanation',
+              72: 'Menu Explanation',
+              73: 'Sensor Test',
+              74: 'Sensor Test',
+              75: 'Sensor Test (Example)',
+              76: 'Return to Wash Cars from Sensor Test',
+              77: 'Boom Position Adjustment at GROUND',
+              78: 'Boom Position Adjustment at GROUND',
+              79: 'Boom Position Adjustment at GROUND'
+            };
             const frag = document.createDocumentFragment();
             for(let p=1;p<=total;p++){
               const opt = document.createElement('option');
               opt.value = String(p);
-              opt.textContent = String(p);
+              const title = titles[p];
+              opt.textContent = title ? `${title} – ${p}` : String(p);
               frag.appendChild(opt);
             }
             pageSelect.appendChild(frag);
