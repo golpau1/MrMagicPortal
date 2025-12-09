@@ -33,8 +33,8 @@
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
       /* Mobile: ensure vertical stack and full-width pages */
       #pdfPages{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 0;width:100%;}
-      /* Make pages slightly narrower on mobile to reveal left-side numbers */
-      .page-item{width:92%;max-width:900px;margin:0 auto;}
+      /* Make pages narrower on mobile to reveal left-side numbers */
+      .page-item{width:86%;max-width:900px;margin:0 auto;}
       #pdfPages img{width:100%;max-width:900px;margin:0 0 16px;}
       /* Slightly adjust number position for small screens */
       .page-number{left:-18px}
@@ -200,9 +200,13 @@
           function createWrapper(idx, img){
             const wrapper = document.createElement('div');
             wrapper.className = 'page-item';
+            // Add skeleton placeholder while image loads
+            const skeleton = document.createElement('div');
+            skeleton.className = 'page-skeleton';
             const label = document.createElement('span');
             label.className = 'page-number';
             label.textContent = String(idx+1);
+            wrapper.appendChild(skeleton);
             wrapper.appendChild(img);
             wrapper.appendChild(label);
             wrapperEls[idx] = wrapper;
@@ -224,6 +228,12 @@
               img.onload = (function(idx){
                 return function(){
                   imgEls[idx] = img;
+                  // Remove skeleton once loaded
+                  const w = wrapperEls[idx];
+                  if(w){
+                    const sk = w.querySelector('.page-skeleton');
+                    if(sk) sk.remove();
+                  }
                   if(pendingIndex !== null && pendingIndex === idx){
                     const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
                     if(el){
@@ -354,6 +364,9 @@
         /* Mobile: remove blue highlight/outline */
         .page-controls, .page-controls *{ -webkit-tap-highlight-color: transparent; }
         #pageMenu button:focus{ outline:none; background:#f0f0f0; }
+        /* Per-page loading skeleton */
+        .page-skeleton{display:block;width:100%;height:52vw;max-height:680px;background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeletonShift 1.2s ease-in-out infinite;border:1px solid #e5e5e5;border-radius:2px;margin:0 0 16px}
+        @keyframes skeletonShift{0%{background-position:200% 0}100%{background-position:-200% 0}}
       </style>
   </section>
 </body>
