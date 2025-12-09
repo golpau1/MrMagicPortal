@@ -191,8 +191,8 @@
           const wrapperEls = [];
           let pendingIndex = null;
           const isMobile = window.matchMedia('(max-width: 600px)').matches;
-          let fragBatchSize = isMobile ? 4 : 8; // default batch size
-          let eagerAll = false; // when true, load all pages immediately
+          let eagerAll = true; // default: load all pages immediately
+          let fragBatchSize = isMobile ? 16 : 24; // larger batches for eager mode
           function createWrapper(idx, img){
             const wrapper = document.createElement('div');
             wrapper.className = 'page-item';
@@ -213,7 +213,7 @@
               const src = imgs[i];
               const img = new Image();
               img.alt = 'Storm manual page ' + (i+1);
-              img.loading = 'lazy';
+              img.loading = 'eager';
               img.decoding = 'async';
               img.style.display='block';
               img.style.margin='0 0 24px';
@@ -290,12 +290,7 @@
             setTimeout(()=>{ fragBatchSize = originalBatch; }, 1500);
           }
           // Eager load all pages on demand
-          loadAllBtn.addEventListener('click', ()=>{
-            eagerAll = true;
-            fragBatchSize = Math.max(fragBatchSize, 24);
-            loadingEl.style.display = 'block';
-            setTimeout(()=> requestAnimationFrame(appendBatch), 0);
-          });
+          // Eager mode is default; no button interaction required.
           // Toggle menu
           function toggleMenu(force){
             const expanded = pageButton.getAttribute('aria-expanded') === 'true';
