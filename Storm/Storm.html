@@ -38,6 +38,11 @@
       #pdfPages img{width:100%;max-width:900px;margin:0 0 16px;}
       /* Slightly adjust number position for small screens */
       .page-number{left:-18px}
+        /* Fix mobile blue color on page selector elements */
+        #pageButton, #pageButtonNumber{ color:#111; }
+        #pageButtonIcon svg{ stroke:#111; fill:none; }
+        #pageButton:active, #pageButtonNumber:active{ color:#111; }
+        #pageButtonIcon svg:active{ stroke:#111; }
     }
   </style>
 </head>
