@@ -15,7 +15,7 @@
 /* Load local VCR OSD Mono font */
 @font-face{
   font-family: 'VCR_OSD_MONO';
-  src: url('../Assets/VCR_OSD_MONO_1.001.ttf') format('truetype');
+  src: url('Assets/VCR_OSD_MONO_1.001.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -38,6 +38,11 @@ body {
   font-weight: 300; /* lighter base weight */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Back button styling: use local VCR OSD Mono font */
+.back-btn{
+  font-family: 'VCR_OSD_MONO', monospace;
 }
 
 /* Screen reader only text */
