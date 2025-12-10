@@ -15,44 +15,73 @@
     body{margin:0;font-family:'VCR OSD Mono', monospace;background:#fafafa;color:#111}
     .back-btn{position:fixed;top:12px;left:12px;z-index:60;display:inline-block;background:#fafafa;border:1px solid #e5e5e5;padding:6px 10px;border-radius:6px;color:#111;text-decoration:none;font-weight:600;font-size:14px;line-height:1.2;min-width:74px;width:74px;text-align:center;box-shadow:none;font-family:'VCR OSD Mono', monospace;box-sizing:border-box}
     .back-btn:active{transform:translateY(1px)}
-    .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0 24px}
+    .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0}
     .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
     .manual-viewer__frame{border:none;border-radius:0;box-shadow:none;background:transparent}
-    /* Centered image stack (desktop 67%, mobile 100%) */
-    #pdfPages{padding:16px 0; display:flex; flex-direction:column; align-items:center;}
-    #pdfPages img{display:block;margin:0 0 24px;width:67%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
-    /* Removed interactive PDF controls */
+    /* Image stack container */
+    #pdfPages{padding:16px 0; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%;}
+    /* Subtle page number */
+    .page-item{position:relative; width:67%; max-width:900px; margin:0 auto; scroll-margin-top:72px}
+    .page-number{position:absolute; top:6px; left:-24px; font-size:12px; color:#555; padding:0; border:none; background:transparent; pointer-events:none;}
+    #pdfPages canvas{display:block;margin:0 0 24px;max-width:100%;background:#fff;border:none;border-radius:0;box-shadow:none}
+    #pdfPages img{display:block;margin:0 0 24px;width:100%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
     @keyframes spin{to{transform:rotate(360deg)}}
+    /* Mobile: turn frame into scroll container with full viewport height for thumb scrolling */
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-      /* Mobile: vertical stack full width */
-      #pdfPages{display:block;padding:16px 0;}
-      #pdfPages img{width:100%;max-width:100%;margin:0 auto 16px;}
+      /* Mobile: ensure vertical stack and full-width pages */
+      #pdfPages{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 0;width:100%;}
+      /* Make pages narrower on mobile to reveal left-side numbers */
+      .page-item{width:86%;max-width:900px;margin:0 auto;}
+      #pdfPages img{width:100%;max-width:900px;margin:0 0 16px;}
+      /* Slightly adjust number position for small screens */
+      .page-number{left:-18px}
+      /* Fix mobile blue color on page selector elements */
+      #pageButton, #pageButtonNumber{ color:#111; }
+      #pageButtonIcon svg{ stroke:#111; fill:none; }
+      #pageButton:active, #pageButtonNumber:active{ color:#111; }
+      #pageButtonIcon svg:active{ stroke:#111; }
     }
   </style>
 </head>
 <body>
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
   <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../Portal%20Page/MrMagic.html';}})();</script>
-  <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index" data-version="v2" style="display:inline-block;background:#fafafa;border:1px solid #e5e5e5;padding:6px 10px;border-radius:6px;color:#111;font-weight:600;font-size:14px;line-height:1.2;width:74px;box-sizing:border-box;text-align:center;text-decoration:none">← Back</a>
+  <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
+  <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:6px 10px;display:flex;gap:8px;align-items:center;cursor:pointer;box-sizing:border-box">
+    <span style="font-size:14px;font-weight:700">Page</span>
+    <button id="pageButton" title="Select page" aria-haspopup="listbox" aria-expanded="false"
+      style="font-family:'VCR OSD Mono', monospace;background:transparent;border:none;border-radius:0;padding:0;font-size:14px;font-weight:700;min-width:auto;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <span id="pageButtonNumber">1</span>
+      <span aria-hidden="true" id="pageButtonIcon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:420px;overflow:auto;min-width:220px;-webkit-tap-highlight-color: transparent"></div>
+  </div>
   <section class="manual-viewer" aria-label="Hurricane Operators Manual">
     <h2 class="manual-viewer__title">Hurricane</h2>
     <div class="manual-viewer__frame">
       <div id="pdfPages" aria-label="Hurricane manual full pages" style="display:none;"></div>
-      <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
-        <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
+      <div id="pdfLoading" style="display:none;position:fixed;inset:0;background:rgba(250,250,250,0.9);z-index:1000;display:flex;align-items:center;justify-content:center">
+        <div style="text-align:center">
+          <div style="display:inline-block;width:48px;height:48px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px"></div>
+          <div style="font-family:'VCR OSD Mono', monospace;font-size:14px;color:#111">Loading pages…</div>
+        </div>
       </div>
     </div>
     <script>
       (function(){
         const pagesContainer = document.getElementById('pdfPages');
         const loadingEl = document.getElementById('pdfLoading');
-        // Show container and loader (use flex for centered stack)
+        const pageButton = document.getElementById('pageButton');
+        const pageMenu = document.getElementById('pageMenu');
+        const pageButtonNumber = document.getElementById('pageButtonNumber');
+        const pageButtonIcon = document.getElementById('pageButtonIcon');
+        const pageControls = document.querySelector('.page-controls');
         pagesContainer.style.display = 'flex';
         loadingEl.style.display = 'block';
-        // Folder provided by you
         const folder = 'Hurricane Manual/';
-        // Try to auto-detect naming pattern by probing a few common prefixes/suffixes
         const prefixes = [
           'HURRICANE OPERATORS MANUAL 11_12_15-images-',
           'HURRICANE OPERATORS MANUAL images-',
@@ -63,41 +92,191 @@
           ''
         ];
         const suffixes = ['.jpg','.jpeg','.png'];
-        function probePattern(idx, onFound, onFail){
-          if(idx >= prefixes.length * suffixes.length) return onFail();
-          const p = Math.floor(idx / suffixes.length);
-          const s = idx % suffixes.length;
-          const src = folder + prefixes[p] + 0 + suffixes[s];
-          const testImg = new Image();
-          testImg.onload = ()=> onFound(prefixes[p], suffixes[s]);
-          testImg.onerror = ()=> probePattern(idx+1, onFound, onFail);
-          testImg.src = src;
-        }
-        function streamImages(prefix, suffix){
-          let i = 0; let successes = 0; let misses = 0;
-          const MAX_MISSES = 1; // stop at first miss after at least one success
-          (function appendNext(){
-            const src = folder + prefix + i + suffix;
-            const img = new Image();
-            img.alt = 'Hurricane manual page ' + (i+1);
-            img.onload = function(){
-              pagesContainer.appendChild(img);
-              successes++; i++; misses = 0; requestAnimationFrame(appendNext);
+        // Detect prefix/suffix and starting index (0 or 1)
+        function detectPattern(cb, fail){
+          let idx = 0;
+          (function tryNext(){
+            if(idx >= prefixes.length * suffixes.length) return fail();
+            const p = Math.floor(idx / suffixes.length);
+            const s = idx % suffixes.length;
+            const src0 = folder + prefixes[p] + 0 + suffixes[s];
+            const img0 = new Image();
+            img0.onload = ()=> cb(prefixes[p], suffixes[s], 0);
+            img0.onerror = ()=>{
+              const src1 = folder + prefixes[p] + 1 + suffixes[s];
+              const img1 = new Image();
+              img1.onload = ()=> cb(prefixes[p], suffixes[s], 1);
+              img1.onerror = ()=>{ idx++; tryNext(); };
+              img1.src = src1;
             };
-            img.onerror = function(){
-              misses++;
-              if(successes > 0 && misses >= MAX_MISSES){ loadingEl.style.display='none'; return; }
-              // If we haven't loaded any yet, keep trying next index just in case numbering starts at 1
-              if(successes === 0 && i < 2){ i++; requestAnimationFrame(appendNext); return; }
-              loadingEl.style.display='none';
-            };
-            img.src = src;
+            img0.src = src0;
           })();
         }
-        probePattern(0, (prefix, suffix)=>{
-          streamImages(prefix, suffix);
+        const wrapperEls = {};
+        const imgEls = {};
+        const menuBuilt = {};
+        let i = 0;
+        let eagerAll = true;
+        let fragBatchSize = 24;
+        let fastForwardTarget = null;
+        let pendingIndex = null;
+        let hardStop = false;
+        function createWrapper(idx, img){
+          const wrapper = document.createElement('div');
+          wrapper.className = 'page-item';
+          const skeleton = document.createElement('div');
+          skeleton.className = 'page-skeleton';
+          const label = document.createElement('span');
+          label.className = 'page-number';
+          label.textContent = String(idx+1);
+          wrapper.appendChild(skeleton);
+          wrapper.appendChild(img);
+          wrapper.appendChild(label);
+          wrapperEls[idx] = wrapper;
+          return wrapper;
+        }
+        function appendMenuItem(pageNum){
+          if(menuBuilt[pageNum]) return;
+          const item = document.createElement('button');
+          item.type = 'button';
+          item.role = 'option';
+          item.setAttribute('data-page', String(pageNum));
+          item.style.cssText = "display:block;width:100%;text-align:left;padding:8px 10px;background:#fafafa;border:none;border-bottom:1px solid #eee;font-family:'VCR OSD Mono', monospace;font-size:13px;cursor:pointer;outline:none;-webkit-appearance:none;-moz-appearance:none;color:#111";
+          item.textContent = String(pageNum);
+          item.addEventListener('click', ()=>{
+            pageButtonNumber.textContent = String(pageNum);
+            pageButton.setAttribute('aria-expanded','false');
+            pageMenu.style.display = 'none';
+            pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+            const idx = pageNum - 1;
+            loadUntil(idx);
+          });
+          pageMenu.appendChild(item);
+          menuBuilt[pageNum] = true;
+        }
+        function toggleMenu(force){
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          const open = force === true || (!expanded && force !== false);
+          if(open){
+            pageButton.setAttribute('aria-expanded','true');
+            pageMenu.style.display = 'block';
+            pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>';
+          } else {
+            pageButton.setAttribute('aria-expanded','false');
+            pageMenu.style.display = 'none';
+            pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+          }
+        }
+        pageControls.addEventListener('click', (e)=>{
+          if(pageMenu.contains(e.target)) return;
+          toggleMenu();
+        });
+        pageButton.addEventListener('click', (e)=>{
+          if(pageMenu.contains(e.target)) return;
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          toggleMenu(!expanded);
+        });
+        pageButtonNumber.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          toggleMenu(!expanded);
+        });
+        pageButtonIcon.addEventListener('click', (e)=>{
+          e.stopPropagation();
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          toggleMenu(!expanded);
+        });
+        document.addEventListener('click', (e)=>{
+          if(!pageMenu.contains(e.target) && e.target !== pageButton && !pageControls.contains(e.target)){
+            pageButton.setAttribute('aria-expanded','false');
+            pageMenu.style.display = 'none';
+            pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+          }
+        });
+        function loadUntil(targetIdx){
+          const existingWrapper = wrapperEls[targetIdx];
+          const existingImg = imgEls[targetIdx];
+          if(existingWrapper || existingImg){
+            const el = existingWrapper || existingImg;
+            requestAnimationFrame(()=>{
+              requestAnimationFrame(()=>{
+                el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              });
+            });
+            return;
+          }
+          fastForwardTarget = targetIdx;
+          pendingIndex = targetIdx;
+          eagerAll = true;
+          fragBatchSize = Math.max(fragBatchSize, 24);
+          setTimeout(()=> requestAnimationFrame(appendBatch), 0);
+        }
+        function srcFor(prefix, suffix, idx){
+          return folder + prefix + idx + suffix;
+        }
+        function appendBatch(){
+          if(hardStop) { loadingEl.style.display='none'; return; }
+          const frag = document.createDocumentFragment();
+          let count = 0;
+          while(count < fragBatchSize && !hardStop){
+            const idx = i;
+            const img = new Image();
+            img.alt = 'Hurricane manual page ' + (idx+1);
+            img.loading = 'eager';
+            img.decoding = 'async';
+            img.style.display='block';
+            img.style.margin='0 0 24px';
+            img.onload = function(){
+              imgEls[idx] = img;
+              const w = wrapperEls[idx];
+              if(w){ const sk = w.querySelector('.page-skeleton'); if(sk) sk.remove(); }
+              appendMenuItem(idx+1);
+              if(pendingIndex !== null && pendingIndex === idx){
+                const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
+                if(el){
+                  requestAnimationFrame(()=>{
+                    requestAnimationFrame(()=>{
+                      el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+                    });
+                  });
+                }
+                pendingIndex = null;
+              }
+            };
+            img.onerror = function(){
+              // first miss after some success: stop
+              if(idx > 1) { hardStop = true; }
+            };
+            img.src = srcFor(currentPrefix, currentSuffix, idx);
+            frag.appendChild(createWrapper(idx, img));
+            i++; count++;
+          }
+          pagesContainer.appendChild(frag);
+          if(fastForwardTarget !== null && (wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget])){
+            const el = wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget];
+            if(el){
+              requestAnimationFrame(()=>{
+                requestAnimationFrame(()=>{
+                  el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+                });
+              });
+            }
+            fastForwardTarget = null;
+          }
+          if(!hardStop){
+            if(eagerAll){ setTimeout(()=> requestAnimationFrame(appendBatch), 0); }
+            else if('requestIdleCallback' in window){ requestIdleCallback(()=> requestAnimationFrame(appendBatch)); }
+            else { setTimeout(()=> requestAnimationFrame(appendBatch), 30); }
+          } else {
+            loadingEl.style.display='none';
+          }
+        }
+        let currentPrefix = null, currentSuffix = null;
+        detectPattern((prefix, suffix, startIdx)=>{
+          currentPrefix = prefix; currentSuffix = suffix; i = startIdx;
+          appendMenuItem(1); // pre-fill first entry
+          appendBatch();
         }, ()=>{
-          // Could not detect automatically; show gentle hint
           loadingEl.innerHTML = '<div style="color:#666;font-size:14px">Add your image names in code: const prefix/suffix in Hurricane.html</div>';
           setTimeout(()=> loadingEl.style.display='none', 2500);
         });
