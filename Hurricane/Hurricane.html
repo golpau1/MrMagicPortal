@@ -121,6 +121,7 @@
         let fastForwardTarget = null;
         let pendingIndex = null;
         let hardStop = false;
+        let startOffset = 0; // 0 if files start at 0, 1 if they start at 1
         function createWrapper(idx, img){
           const wrapper = document.createElement('div');
           wrapper.className = 'page-item';
@@ -128,7 +129,8 @@
           skeleton.className = 'page-skeleton';
           const label = document.createElement('span');
           label.className = 'page-number';
-          label.textContent = String(idx+1);
+          const pageNum = (idx + 1) - startOffset;
+          label.textContent = String(pageNum);
           wrapper.appendChild(skeleton);
           wrapper.appendChild(img);
           wrapper.appendChild(label);
@@ -268,7 +270,8 @@
           while(count < fragBatchSize && !hardStop){
             const idx = i;
             const img = new Image();
-            img.alt = 'Hurricane manual page ' + (idx+1);
+            const pageNum = (idx + 1) - startOffset;
+            img.alt = 'Hurricane manual page ' + pageNum;
             img.loading = 'eager';
             img.decoding = 'async';
             img.style.display='block';
@@ -278,7 +281,7 @@
               const wrapper = createWrapper(idx, img);
               pagesContainer.appendChild(wrapper);
               imgEls[idx] = img;
-              appendMenuItem(idx+1);
+              appendMenuItem(pageNum);
               if(pendingIndex !== null && pendingIndex === idx){
                 const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
                 if(el){
@@ -319,7 +322,7 @@
         }
         let currentPrefix = null, currentSuffix = null;
         detectPattern((prefix, suffix, startIdx)=>{
-          currentPrefix = prefix; currentSuffix = suffix; i = startIdx;
+          currentPrefix = prefix; currentSuffix = suffix; i = startIdx; startOffset = startIdx;
           appendMenuItem(1); // pre-fill first entry
           appendBatch();
         }, ()=>{
