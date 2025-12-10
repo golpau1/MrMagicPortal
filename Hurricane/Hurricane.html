@@ -122,6 +122,7 @@
         let pendingIndex = null;
         let hardStop = false;
         let startOffset = 0; // 0 if files start at 0, 1 if they start at 1
+        const maxPages = 44; // enforce ascending order up to provided titles
         function createWrapper(idx, img){
           const wrapper = document.createElement('div');
           wrapper.className = 'page-item';
@@ -204,6 +205,10 @@
           pageMenu.appendChild(item);
           menuBuilt[pageNum] = true;
         }
+        // Prebuild menu in ascending order with titles
+        (function buildMenu(){
+          for(let p=1; p<=maxPages; p++) appendMenuItem(p);
+        })();
         function toggleMenu(force){
           const expanded = pageButton.getAttribute('aria-expanded') === 'true';
           const open = force === true || (!expanded && force !== false);
@@ -269,6 +274,8 @@
           let count = 0;
           while(count < fragBatchSize && !hardStop){
             const idx = i;
+            // Stop once we reach the last desired page based on titles
+            if((idx - startOffset + 1) > maxPages){ hardStop = true; break; }
             const img = new Image();
             const pageNum = (idx + 1) - startOffset;
             img.alt = 'Hurricane manual page ' + pageNum;
@@ -295,8 +302,9 @@
               }
             };
             img.onerror = function(){
-              // Stop on first miss after some successes
-              if(idx > 1) { hardStop = true; }
+              // If a page image is missing, continue to next until we reach maxPages
+              // But if many in a row are missing, stop to avoid infinite attempts.
+              if(idx > startOffset + 2) { hardStop = true; }
             };
             img.src = srcFor(currentPrefix, currentSuffix, idx);
             i++; count++;
@@ -323,7 +331,6 @@
         let currentPrefix = null, currentSuffix = null;
         detectPattern((prefix, suffix, startIdx)=>{
           currentPrefix = prefix; currentSuffix = suffix; i = startIdx; startOffset = startIdx;
-          appendMenuItem(1); // pre-fill first entry
           appendBatch();
         }, ()=>{
           loadingEl.innerHTML = '<div style="color:#666;font-size:14px">Add your image names in code: const prefix/suffix in Hurricane.html</div>';
