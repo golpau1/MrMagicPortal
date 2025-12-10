@@ -60,7 +60,7 @@
     <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:420px;overflow:auto;min-width:220px;-webkit-tap-highlight-color: transparent"></div>
   </div>
   <section class="manual-viewer" aria-label="Hurricane Operators Manual">
-    <h2 class="manual-viewer__title">Hurricane</h2>
+    
     <div class="manual-viewer__frame">
       <div id="pdfPages" aria-label="Hurricane manual full pages" style="display:none;"></div>
       <div id="pdfLoading" style="display:none;position:fixed;inset:0;background:rgba(250,250,250,0.9);z-index:1000;display:flex;align-items:center;justify-content:center">
@@ -216,7 +216,6 @@
         }
         function appendBatch(){
           if(hardStop) { loadingEl.style.display='none'; return; }
-          const frag = document.createDocumentFragment();
           let count = 0;
           while(count < fragBatchSize && !hardStop){
             const idx = i;
@@ -227,9 +226,10 @@
             img.style.display='block';
             img.style.margin='0 0 24px';
             img.onload = function(){
+              // Only append wrapper after successful load to avoid broken placeholders
+              const wrapper = createWrapper(idx, img);
+              pagesContainer.appendChild(wrapper);
               imgEls[idx] = img;
-              const w = wrapperEls[idx];
-              if(w){ const sk = w.querySelector('.page-skeleton'); if(sk) sk.remove(); }
               appendMenuItem(idx+1);
               if(pendingIndex !== null && pendingIndex === idx){
                 const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
@@ -244,14 +244,12 @@
               }
             };
             img.onerror = function(){
-              // first miss after some success: stop
+              // Stop on first miss after some successes
               if(idx > 1) { hardStop = true; }
             };
             img.src = srcFor(currentPrefix, currentSuffix, idx);
-            frag.appendChild(createWrapper(idx, img));
             i++; count++;
           }
-          pagesContainer.appendChild(frag);
           if(fastForwardTarget !== null && (wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget])){
             const el = wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget];
             if(el){
