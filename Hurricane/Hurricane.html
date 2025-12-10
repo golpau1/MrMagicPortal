@@ -135,6 +135,44 @@
           wrapperEls[idx] = wrapper;
           return wrapper;
         }
+        // Title mapping for page selector
+        const titles = {
+          1: 'Cover',
+          2: 'Contents',
+          3: 'Maintenance',
+          4: 'Tips',
+          5: 'Pressure Settings',
+          6: 'Unloader Lever Main Pump',
+          7: 'Reboot',
+          8: 'Reposition Machine',
+          9: 'Filters',
+          10: 'Belt Adjustment',
+          11: 'High Pressure Pump Oil Change',
+          12: 'Lubrication Of Tractor Feed',
+          13: 'Mars Note Validator',
+          14: 'Mars Note Validator Fault Codes',
+          15: 'Coin Validator Removal',
+          16: 'Coin Validator Cleaning',
+          17: 'Coin Validator Coin Activation',
+          18: 'Sensors',
+          19: 'Photo Light Beams – 20',
+          20: 'Proximity Sensors – 21–22',
+          23: 'Cabinet Layout',
+          24: 'Safety Timer',
+          25: 'Cabinet Wiring Connections',
+          26: 'Gantry Input Junction Box Wiring',
+          27: 'Gantry Output Junction Box Wiring',
+          28: 'Fault procedure (ie machine stops)',
+          29: 'Jet Cleaning procedure',
+          30: 'Product Venturi’s',
+          31: 'Product Metering Tip Sizes and Colors',
+          32: 'Product Tip Settings Standard',
+          33: 'Product Tip Setting',
+          34: 'Wash Jet Sizes',
+          35: 'Lenze Inverter Settings',
+          36: 'Sensor Test',
+          37: 'Electrical Cabinet Wiring'
+        };
         function appendMenuItem(pageNum){
           if(menuBuilt[pageNum]) return;
           const item = document.createElement('button');
@@ -142,7 +180,8 @@
           item.role = 'option';
           item.setAttribute('data-page', String(pageNum));
           item.style.cssText = "display:block;width:100%;text-align:left;padding:8px 10px;background:#fafafa;border:none;border-bottom:1px solid #eee;font-family:'VCR OSD Mono', monospace;font-size:13px;cursor:pointer;outline:none;-webkit-appearance:none;-moz-appearance:none;color:#111";
-          item.textContent = String(pageNum);
+          const title = titles[pageNum];
+          item.textContent = title ? `${pageNum} – ${title}` : String(pageNum);
           item.addEventListener('click', ()=>{
             pageButtonNumber.textContent = String(pageNum);
             pageButton.setAttribute('aria-expanded','false');
