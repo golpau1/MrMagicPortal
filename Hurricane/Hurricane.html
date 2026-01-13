@@ -115,12 +115,6 @@
         const wrapperEls = {};
         const imgEls = {};
         const menuBuilt = {};
-        let i = 0;
-        let eagerAll = true;
-        let fragBatchSize = 24;
-        let fastForwardTarget = null;
-        let pendingIndex = null;
-        let hardStop = false;
         let startOffset = 0; // 0 if files start at 0, 1 if they start at 1
         const maxPages = 44; // enforce ascending order up to provided titles
 
@@ -203,7 +197,7 @@
             pageButton.setAttribute('aria-expanded','false');
             pageMenu.style.display = 'none';
             pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
-            loadUntil(pageNumToFileIdx(pageNum));
+            scrollToIndex(pageNumToFileIdx(pageNum));
           });
           pageMenu.appendChild(item);
           menuBuilt[pageNum] = true;
@@ -251,95 +245,61 @@
             pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
           }
         });
-        function loadUntil(targetIdx){
-          const existingWrapper = wrapperEls[targetIdx];
-          const existingImg = imgEls[targetIdx];
-          if(existingWrapper || existingImg){
-            const el = existingWrapper || existingImg;
+        function scrollToIndex(targetIdx){
+          const el = wrapperEls[targetIdx] || imgEls[targetIdx];
+          if(!el) return;
+          requestAnimationFrame(()=>{
             requestAnimationFrame(()=>{
-              requestAnimationFrame(()=>{
-                el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
-              });
+              el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
             });
-            return;
-          }
-          fastForwardTarget = targetIdx;
-          pendingIndex = targetIdx;
-          eagerAll = true;
-          fragBatchSize = Math.max(fragBatchSize, 24);
-          setTimeout(()=> requestAnimationFrame(appendBatch), 0);
+          });
         }
         function srcFor(prefix, suffix, idx){
           return folder + prefix + idx + suffix;
         }
-        function appendBatch(){
-          if(hardStop) { loadingEl.style.display='none'; return; }
-          let count = 0;
-          while(count < fragBatchSize && !hardStop){
-            const idx = i;
-            // Stop once we reach the last desired page based on titles
-            if((idx - startOffset + 1) > maxPages){ hardStop = true; break; }
+        function buildPages(){
+          pagesContainer.innerHTML = '';
+          let done = 0;
+          function markDone(){
+            done++;
+            if(done >= maxPages){
+              loadingEl.style.display = 'none';
+            }
+          }
+
+          for(let pageNum = 1; pageNum <= maxPages; pageNum++){
+            const idx = pageNumToFileIdx(pageNum);
             const img = new Image();
-            const pageNum = (idx + 1) - startOffset;
             img.alt = 'Hurricane manual page ' + pageNum;
             img.loading = 'eager';
             img.decoding = 'async';
-            img.style.display='block';
-            img.style.margin='0 0 24px';
+            img.style.display = 'block';
+            img.style.margin = '0 0 24px';
 
-            // Append wrapper immediately in numeric order so pages always render ascending.
             const wrapper = createWrapper(idx, img);
             pagesContainer.appendChild(wrapper);
 
             img.onload = function(){
               imgEls[idx] = img;
-              appendMenuItem(pageNum);
               const sk = wrapper.querySelector('.page-skeleton');
               if(sk) sk.remove();
-              if(pendingIndex !== null && pendingIndex === idx){
-                const el = wrapperEls[pendingIndex] || imgEls[pendingIndex];
-                if(el){
-                  requestAnimationFrame(()=>{
-                    requestAnimationFrame(()=>{
-                      el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
-                    });
-                  });
-                }
-                pendingIndex = null;
-              }
+              markDone();
             };
             img.onerror = function(){
-              // Remove the placeholder wrapper if the image is missing.
+              // Keep ordering stable: remove the wrapper for missing images.
               if(wrapper && wrapper.parentNode){ wrapper.parentNode.removeChild(wrapper); }
-              // Stop on first miss after some successes to avoid hammering.
-              if(idx > startOffset + 2) { hardStop = true; }
+              markDone();
             };
+
             img.src = srcFor(currentPrefix, currentSuffix, idx);
-            i++; count++;
-          }
-          if(fastForwardTarget !== null && (wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget])){
-            const el = wrapperEls[fastForwardTarget] || imgEls[fastForwardTarget];
-            if(el){
-              requestAnimationFrame(()=>{
-                requestAnimationFrame(()=>{
-                  el.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
-                });
-              });
-            }
-            fastForwardTarget = null;
-          }
-          if(!hardStop){
-            if(eagerAll){ setTimeout(()=> requestAnimationFrame(appendBatch), 0); }
-            else if('requestIdleCallback' in window){ requestIdleCallback(()=> requestAnimationFrame(appendBatch)); }
-            else { setTimeout(()=> requestAnimationFrame(appendBatch), 30); }
-          } else {
-            loadingEl.style.display='none';
           }
         }
         let currentPrefix = null, currentSuffix = null;
         detectPattern((prefix, suffix, startIdx)=>{
-          currentPrefix = prefix; currentSuffix = suffix; i = startIdx; startOffset = startIdx;
-          appendBatch();
+          currentPrefix = prefix;
+          currentSuffix = suffix;
+          startOffset = startIdx;
+          buildPages();
         }, ()=>{
           loadingEl.innerHTML = '<div style="color:#666;font-size:14px">Add your image names in code: const prefix/suffix in Hurricane.html</div>';
           setTimeout(()=> loadingEl.style.display='none', 2500);
