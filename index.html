@@ -62,6 +62,7 @@
           const form = document.querySelector('.form');
           const err = document.getElementById('formError');
           const loading = document.getElementById('loginLoading');
+          const card = document.querySelector('.card');
           const passwordInput = document.getElementById('password');
           const togglePassword = document.getElementById('togglePassword');
           const eyeSlash = document.getElementById('eyeSlash');
@@ -95,6 +96,17 @@
             window.location.href = redirectPath;
           }
 
+          function autoEnterManuals(){
+            if (card) {
+              card.setAttribute('aria-busy', 'true');
+            }
+            if (loading) {
+              loading.hidden = false;
+              loading.textContent = 'Opening manuals…';
+            }
+            setAuthAndRedirect();
+          }
+
           function handleLogin(password){
             err.hidden = true;
             err.textContent = '';
@@ -123,6 +135,14 @@
           // Initial state: password hidden, plain eye (no slash)
           if (eyeSlash) {
             eyeSlash.style.display = 'none';
+          }
+
+          const existingAuth = sessionStorage.getItem(AUTH_KEY) || (function(){
+            try { return localStorage.getItem(AUTH_KEY) || ''; } catch(e) { return ''; }
+          })();
+          if (existingAuth === AUTH_VALUE) {
+            setAuthAndRedirect();
+            return;
           }
 
           togglePassword.addEventListener('click', ()=>{
@@ -155,7 +175,7 @@
             // Token-based login (preferred)
             if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
               clearTokenFromUrl();
-              setAuthAndRedirect();
+              autoEnterManuals();
               return;
             }
 
@@ -184,6 +204,8 @@
             clearTokenFromUrl();
             handleLogin(pw);
           })();
+
+          autoEnterManuals();
 
           form.addEventListener('submit', (e)=>{
             e.preventDefault();
