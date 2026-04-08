@@ -95,6 +95,31 @@
             window.location.href = redirectPath;
           }
 
+          function handleLogin(password){
+            err.hidden = true;
+            err.textContent = '';
+            err.classList.remove('is-visible');
+            loading.hidden = false;
+
+            const normalizedPassword = String(password || '').trim();
+            if (!normalizedPassword) {
+              err.hidden = false;
+              err.textContent = 'Enter password';
+              loading.hidden = true;
+              return;
+            }
+
+            if (PASSWORDS.includes(normalizedPassword)) {
+              setAuthAndRedirect();
+              return;
+            }
+
+            err.hidden = false;
+            err.classList.add('is-visible');
+            err.textContent = 'Wrong password';
+            loading.hidden = true;
+          }
+
           // Initial state: password hidden, plain eye (no slash)
           if (eyeSlash) {
             eyeSlash.style.display = 'none';
@@ -137,10 +162,7 @@
             if(token && PASSWORDS.includes(token)){
               passwordInput.value = token;
               clearTokenFromUrl();
-              try {
-                if(typeof form.requestSubmit === 'function') form.requestSubmit();
-                else form.dispatchEvent(new Event('submit', { cancelable: true }));
-              } catch(e) {}
+              handleLogin(token);
               return;
             }
 
@@ -158,37 +180,12 @@
 
             passwordInput.value = pw;
             clearTokenFromUrl();
-            // Trigger existing submit handler
-            try {
-              if(typeof form.requestSubmit === 'function') form.requestSubmit();
-              else form.dispatchEvent(new Event('submit', { cancelable: true }));
-            } catch(e) {}
+            handleLogin(pw);
           })();
 
           form.addEventListener('submit', (e)=>{
             e.preventDefault();
-            err.hidden = true;
-            err.textContent = '';
-            err.classList.remove('is-visible');
-            loading.hidden = false;
-
-            const password = passwordInput.value.trim();
-            if (!password) {
-              err.hidden = false;
-              err.textContent = 'Enter password';
-              loading.hidden = true;
-              return;
-            }
-
-            if (PASSWORDS.includes(password)) {
-              setAuthAndRedirect();
-            } else {
-              err.hidden = false;
-              err.classList.add('is-visible');
-              err.textContent = 'Wrong password';
-            }
-
-            loading.hidden = true;
+            handleLogin(passwordInput.value);
           });
         })();
       </script>
