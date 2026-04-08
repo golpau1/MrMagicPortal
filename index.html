@@ -62,7 +62,6 @@
           const form = document.querySelector('.form');
           const err = document.getElementById('formError');
           const loading = document.getElementById('loginLoading');
-          const card = document.querySelector('.card');
           const passwordInput = document.getElementById('password');
           const togglePassword = document.getElementById('togglePassword');
           const eyeSlash = document.getElementById('eyeSlash');
@@ -94,17 +93,6 @@
             try { localStorage.setItem(AUTH_KEY, AUTH_VALUE); } catch(e) {}
             sessionStorage.setItem('claudeSonnet45', 'enabled');
             window.location.href = redirectPath;
-          }
-
-          function autoEnterManuals(){
-            if (card) {
-              card.setAttribute('aria-busy', 'true');
-            }
-            if (loading) {
-              loading.hidden = false;
-              loading.textContent = 'Opening manuals…';
-            }
-            setAuthAndRedirect();
           }
 
           function handleLogin(password){
@@ -165,7 +153,6 @@
             const rawHash = (location.hash || '').replace(/^#/, '').trim();
             const rawSearch = (location.search || '').replace(/^\?/, '').trim();
             const isKeyValue = (raw) => raw.includes('=');
-            const hasQrStyleInput = Boolean(rawHash || rawSearch);
 
             let token = (qp.get('t') || qp.get('token') || hp.get('t') || hp.get('token') || '').trim();
             // Some QR generators/scanners use a bare hash like `.../index.html#magic`
@@ -175,7 +162,7 @@
             // Token-based login (preferred)
             if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
               clearTokenFromUrl();
-              autoEnterManuals();
+              setAuthAndRedirect();
               return;
             }
 
@@ -192,7 +179,6 @@
             let pw = (qp.get('p') || qp.get('pw') || qp.get('password') || hp.get('p') || hp.get('pw') || hp.get('password') || '').trim();
             if(!pw && rawHash && !isKeyValue(rawHash)) pw = rawHash;
             if(!pw && rawSearch && !isKeyValue(rawSearch) && !rawSearch.includes('&')) pw = rawSearch;
-            if(!pw && hasQrStyleInput) pw = 'magic';
             if(!pw) {
               // Keep backwards-compat: require explicit flag if no password provided.
               const auto = (qp.get('autologin') || hp.get('autologin') || '').trim();
@@ -204,8 +190,6 @@
             clearTokenFromUrl();
             handleLogin(pw);
           })();
-
-          autoEnterManuals();
 
           form.addEventListener('submit', (e)=>{
             e.preventDefault();
