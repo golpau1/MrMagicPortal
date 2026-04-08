@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Access</title>
   <link rel="stylesheet" href="MrMagic.css" />
+  <script src="auth-config.js"></script>
   <style>
     .qr-note{margin:0 auto;max-width:520px;text-align:center;color:#111;}
     .qr-note p{margin:10px 0;color:#444;}
@@ -37,16 +38,14 @@
 
   <script>
     (function(){
-      // NOTE: This is a static, client-side "magic link". Anyone with the link can use it,
-      // and the token can be discovered by viewing source. For real security, use a server.
+      // NOTE: This is a static, client-side "magic link". Anyone with the QR link can use it.
+      // For real security, use a server.
 
-      // Change this token to something unguessable and re-generate your QR code.
-      // Recommended: 24+ random characters.
-      const QR_ACCESS_TOKEN = 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
-
-      const AUTH_KEY = 'authToken';
-      const AUTH_VALUE = 'ok';
-      const HOMEPAGE = 'Homepage/homepage.html';
+      const cfg = window.MRMAGIC_AUTH || {};
+      const QR_ACCESS_TOKEN = String(cfg.QR_ACCESS_TOKEN || '');
+      const AUTH_KEY = String(cfg.AUTH_KEY || 'authToken');
+      const AUTH_VALUE = String(cfg.AUTH_VALUE || 'ok');
+      const HOMEPAGE = String(cfg.HOMEPAGE_PATH || 'Homepage/homepage.html');
 
       function getHashToken(){
         const raw = (location.hash || '').replace(/^#/, '');
@@ -57,7 +56,7 @@
 
       const token = getHashToken();
 
-      if(token && token === QR_ACCESS_TOKEN){
+      if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
         sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
         sessionStorage.setItem('claudeSonnet45','enabled');
         // Avoid leaving the token in history

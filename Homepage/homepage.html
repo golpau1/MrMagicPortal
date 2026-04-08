@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>User Manuals</title>
   <link rel="stylesheet" href="homepage.css">
+  <script src="../auth-config.js"></script>
 </head>
   <body>
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
@@ -32,7 +33,8 @@
   <script>
     document.addEventListener('DOMContentLoaded', function(){
       // Auth token guard
-      const QR_ACCESS_TOKEN = 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
+      const cfg = window.MRMAGIC_AUTH || {};
+      const QR_ACCESS_TOKEN = String(cfg.QR_ACCESS_TOKEN || '');
 
       function getHashToken(){
         const raw = (location.hash || '').replace(/^#/, '');
@@ -44,10 +46,10 @@
       let token = sessionStorage.getItem('authToken');
       if(!token){
         const hashToken = getHashToken();
-        if(hashToken && hashToken === QR_ACCESS_TOKEN){
-          sessionStorage.setItem('authToken', 'ok');
+        if(hashToken && QR_ACCESS_TOKEN && hashToken === QR_ACCESS_TOKEN){
+          sessionStorage.setItem('authToken', String(cfg.AUTH_VALUE || 'ok'));
           sessionStorage.setItem('claudeSonnet45','enabled');
-          token = 'ok';
+          token = String(cfg.AUTH_VALUE || 'ok');
           // Remove the token from the URL
           try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
         }
