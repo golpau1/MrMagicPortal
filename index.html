@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600&display=swap" rel="stylesheet">
+  <script src="auth-config.js"></script>
   <style>
     .back-btn{position:fixed;top:12px;left:12px;z-index:60;display:inline-block;background:#fafafa;border:1px solid #e5e5e5;padding:6px 10px;border-radius:6px;color:#111;text-decoration:none;font-weight:600;font-size:14px;line-height:1.2;min-width:74px;width:74px;text-align:center;box-shadow:none;font-family:'VCR_OSD_MONO', monospace;box-sizing:border-box}
     .back-btn:active{transform:translateY(1px)}
@@ -64,9 +65,35 @@
           const passwordInput = document.getElementById('password');
           const togglePassword = document.getElementById('togglePassword');
           const eyeSlash = document.getElementById('eyeSlash');
+          const cfg = window.MRMAGIC_AUTH || {};
+          const AUTH_KEY = String(cfg.AUTH_KEY || 'authToken');
+          const AUTH_VALUE = String(cfg.AUTH_VALUE || 'ok');
+          const QR_ACCESS_TOKEN = String(cfg.QR_ACCESS_TOKEN || '');
           // Always use project-relative path so it works locally and online
-          const redirectPath = 'Homepage/homepage.html';
-          const PASSWORDS = ['magic','Magic'];
+          const redirectPath = String(cfg.REDIRECT_PATH || 'Homepage/homepage.html');
+          const PASSWORDS = Array.isArray(cfg.PASSWORDS) && cfg.PASSWORDS.length ? cfg.PASSWORDS : ['magic','Magic'];
+
+          function getHashParams(){
+            const raw = (location.hash || '').replace(/^#/, '');
+            return new URLSearchParams(raw);
+          }
+
+          function getQueryParams(){
+            return new URLSearchParams(location.search || '');
+          }
+
+          function clearTokenFromUrl(){
+            try {
+              history.replaceState(null, '', location.pathname);
+            } catch(e) {}
+          }
+
+          function setAuthAndRedirect(){
+            sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
+            try { localStorage.setItem(AUTH_KEY, AUTH_VALUE); } catch(e) {}
+            sessionStorage.setItem('claudeSonnet45', 'enabled');
+            window.location.href = redirectPath;
+          }
 
           // Initial state: password hidden, plain eye (no slash)
           if (eyeSlash) {
@@ -82,6 +109,35 @@
             }
             togglePassword.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
           });
+
+          // Optional auto-login (QR deep link):
+          // - Token mode (recommended): `?token=...` or `#token=...`
+          // - Password mode: `?password=...&autologin=1` or `#password=...&autologin=1`
+          (function tryAutoLogin(){
+            const qp = getQueryParams();
+            const hp = getHashParams();
+
+            const token = (qp.get('t') || qp.get('token') || hp.get('t') || hp.get('token') || '').trim();
+            if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
+              clearTokenFromUrl();
+              setAuthAndRedirect();
+              return;
+            }
+
+            const auto = (qp.get('autologin') || hp.get('autologin') || '').trim();
+            if(auto !== '1' && auto.toLowerCase() !== 'true') return;
+
+            const pw = (qp.get('p') || qp.get('pw') || qp.get('password') || hp.get('p') || hp.get('pw') || hp.get('password') || '').trim();
+            if(!pw) return;
+
+            passwordInput.value = pw;
+            clearTokenFromUrl();
+            // Trigger existing submit handler
+            try {
+              if(typeof form.requestSubmit === 'function') form.requestSubmit();
+              else form.dispatchEvent(new Event('submit', { cancelable: true }));
+            } catch(e) {}
+          })();
 
           form.addEventListener('submit', (e)=>{
             e.preventDefault();
@@ -99,10 +155,7 @@
             }
 
             if (PASSWORDS.includes(password)) {
-              sessionStorage.setItem('authToken', 'ok');
-              try { localStorage.setItem('authToken', 'ok'); } catch(e) {}
-              sessionStorage.setItem('claudeSonnet45', 'enabled');
-              window.location.href = redirectPath;
+              setAuthAndRedirect();
             } else {
               err.hidden = false;
               err.classList.add('is-visible');
