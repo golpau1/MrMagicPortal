@@ -31,7 +31,7 @@
 </head>
 <body>
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
-  <script>(function(){const k='authToken';const t=sessionStorage.getItem(k)||(function(){try{return localStorage.getItem(k);}catch(e){return ''}})();if(!t){window.location.href='../index.html';}else{if(!sessionStorage.getItem(k)) sessionStorage.setItem(k,t);}})();</script>
+  <script>(function(){const k='authToken';try{localStorage.removeItem(k);}catch(e){}const t=sessionStorage.getItem(k);if(!t){window.location.href='../index.html';}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
   <section class="manual-viewer" aria-label="Validator Operators Manual">
     <h2 class="manual-viewer__title">Validator</h2>

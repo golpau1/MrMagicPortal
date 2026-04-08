@@ -72,9 +72,13 @@
           const redirectPath = String(cfg.REDIRECT_PATH || 'Homepage/homepage.html');
           const PASSWORDS = Array.isArray(cfg.PASSWORDS) && cfg.PASSWORDS.length ? cfg.PASSWORDS : ['magic','Magic'];
 
+          function clearStoredAuth(){
+            sessionStorage.removeItem(AUTH_KEY);
+            try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
+          }
+
           function setAuthAndRedirect(){
             sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
-            try { localStorage.setItem(AUTH_KEY, AUTH_VALUE); } catch(e) {}
             sessionStorage.setItem('claudeSonnet45', 'enabled');
             window.location.href = redirectPath;
           }
@@ -109,13 +113,7 @@
             eyeSlash.style.display = 'none';
           }
 
-          const existingAuth = sessionStorage.getItem(AUTH_KEY) || (function(){
-            try { return localStorage.getItem(AUTH_KEY) || ''; } catch(e) { return ''; }
-          })();
-          if (existingAuth === AUTH_VALUE) {
-            setAuthAndRedirect();
-            return;
-          }
+          clearStoredAuth();
 
           togglePassword.addEventListener('click', ()=>{
             const isHidden = passwordInput.type === 'password';

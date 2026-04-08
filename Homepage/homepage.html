@@ -51,15 +51,16 @@
       }
 
       function getStoredAuth(){
-        const s = sessionStorage.getItem(AUTH_KEY);
-        if(s) return s;
-        try { return localStorage.getItem(AUTH_KEY) || ''; } catch(e) { return ''; }
+        return sessionStorage.getItem(AUTH_KEY) || '';
       }
 
       function setAuth(){
         sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
-        try { localStorage.setItem(AUTH_KEY, AUTH_VALUE); } catch(e) {}
         sessionStorage.setItem('claudeSonnet45','enabled');
+      }
+
+      function clearLegacyAuth(){
+        try { localStorage.removeItem(AUTH_KEY); } catch(e) {}
       }
 
       function clearTokenFromUrl(){
@@ -68,6 +69,8 @@
         } catch(e) {}
       }
 
+      clearLegacyAuth();
+
       let token = getStoredAuth();
       if(!token){
         const inboundToken = getQueryToken() || getHashToken();
@@ -75,13 +78,6 @@
           setAuth();
           token = AUTH_VALUE;
           clearTokenFromUrl();
-        }
-      }
-
-      if(token){
-        // If auth exists in localStorage only, sync it into sessionStorage
-        if(!sessionStorage.getItem(AUTH_KEY)){
-          sessionStorage.setItem(AUTH_KEY, token);
         }
       }
 
