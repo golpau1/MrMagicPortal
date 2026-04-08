@@ -32,8 +32,32 @@
   <script>
     document.addEventListener('DOMContentLoaded', function(){
       // Auth token guard
-      const token = sessionStorage.getItem('authToken');
-  if(!token){ console.warn('[GUIDES] No auth token; redirecting to login'); window.location.href = (location.protocol === 'file:' ? '../index.html' : '/index.html'); return; }
+      const QR_ACCESS_TOKEN = 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
+
+      function getHashToken(){
+        const raw = (location.hash || '').replace(/^#/, '');
+        if(!raw) return '';
+        const params = new URLSearchParams(raw);
+        return (params.get('t') || params.get('token') || '').trim();
+      }
+
+      let token = sessionStorage.getItem('authToken');
+      if(!token){
+        const hashToken = getHashToken();
+        if(hashToken && hashToken === QR_ACCESS_TOKEN){
+          sessionStorage.setItem('authToken', 'ok');
+          sessionStorage.setItem('claudeSonnet45','enabled');
+          token = 'ok';
+          // Remove the token from the URL
+          try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
+        }
+      }
+
+      if(!token){
+        console.warn('[GUIDES] No auth token; redirecting to login');
+        window.location.href = '../index.html';
+        return;
+      }
 
       // Static guides list (locked to two options)
       const GUIDES = [

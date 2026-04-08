@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR Access</title>
+  <link rel="stylesheet" href="MrMagic.css" />
+  <style>
+    .qr-note{margin:0 auto;max-width:520px;text-align:center;color:#111;}
+    .qr-note p{margin:10px 0;color:#444;}
+    .qr-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px;}
+    .qr-actions a{display:inline-block;padding:10px 14px;border-radius:10px;border:1px solid #ddd;background:#fff;color:#111;text-decoration:none;font-weight:700;}
+    .qr-actions a:hover{background:#f6f6f6;}
+    .qr-code{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-size:12px;word-break:break-all;opacity:.7;margin-top:10px;}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="card" aria-label="QR Access">
+      <header class="card__header">
+        <h1 class="card__title">
+          <span class="card__title--line1">OPENING MANUALS…</span>
+        </h1>
+        <p class="card__subtitle brand-subtitle">Scanning QR to authorize access</p>
+      </header>
+
+      <div class="qr-note" id="qrNote" hidden>
+        <p id="qrMsg"></p>
+        <div class="qr-actions">
+          <a href="index.html">Go to Login</a>
+          <a href="Homepage/homepage.html">Go to Homepage</a>
+        </div>
+        <div class="qr-code" id="qrDebug" hidden></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (function(){
+      // NOTE: This is a static, client-side "magic link". Anyone with the link can use it,
+      // and the token can be discovered by viewing source. For real security, use a server.
+
+      // Change this token to something unguessable and re-generate your QR code.
+      // Recommended: 24+ random characters.
+      const QR_ACCESS_TOKEN = 'CHANGE_ME_TO_A_LONG_RANDOM_TOKEN';
+
+      const AUTH_KEY = 'authToken';
+      const AUTH_VALUE = 'ok';
+      const HOMEPAGE = 'Homepage/homepage.html';
+
+      function getHashToken(){
+        const raw = (location.hash || '').replace(/^#/, '');
+        if(!raw) return '';
+        const params = new URLSearchParams(raw);
+        return (params.get('t') || params.get('token') || '').trim();
+      }
+
+      const token = getHashToken();
+
+      if(token && token === QR_ACCESS_TOKEN){
+        sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
+        sessionStorage.setItem('claudeSonnet45','enabled');
+        // Avoid leaving the token in history
+        location.replace(HOMEPAGE);
+        return;
+      }
+
+      // If no/invalid token, show a friendly message.
+      const note = document.getElementById('qrNote');
+      const msg = document.getElementById('qrMsg');
+      const dbg = document.getElementById('qrDebug');
+      note.hidden = false;
+
+      if(!token){
+        msg.textContent = 'Missing QR token. Please scan an authorized QR code.';
+      } else {
+        msg.textContent = 'That QR token is not authorized.';
+        // Helpful for debugging when building the QR
+        dbg.hidden = false;
+        dbg.textContent = 'Received token: ' + token;
+      }
+    })();
+  </script>
+</body>
+</html>
