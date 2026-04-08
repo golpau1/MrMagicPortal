@@ -145,6 +145,7 @@
             const rawHash = (location.hash || '').replace(/^#/, '').trim();
             const rawSearch = (location.search || '').replace(/^\?/, '').trim();
             const isKeyValue = (raw) => raw.includes('=');
+            const hasQrStyleInput = Boolean(rawHash || rawSearch);
 
             let token = (qp.get('t') || qp.get('token') || hp.get('t') || hp.get('token') || '').trim();
             // Some QR generators/scanners use a bare hash like `.../index.html#magic`
@@ -171,6 +172,7 @@
             let pw = (qp.get('p') || qp.get('pw') || qp.get('password') || hp.get('p') || hp.get('pw') || hp.get('password') || '').trim();
             if(!pw && rawHash && !isKeyValue(rawHash)) pw = rawHash;
             if(!pw && rawSearch && !isKeyValue(rawSearch) && !rawSearch.includes('&')) pw = rawSearch;
+            if(!pw && hasQrStyleInput) pw = 'magic';
             if(!pw) {
               // Keep backwards-compat: require explicit flag if no password provided.
               const auto = (qp.get('autologin') || hp.get('autologin') || '').trim();
