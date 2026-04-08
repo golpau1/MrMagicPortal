@@ -117,18 +117,44 @@
             const qp = getQueryParams();
             const hp = getHashParams();
 
-            const token = (qp.get('t') || qp.get('token') || hp.get('t') || hp.get('token') || '').trim();
+            const rawHash = (location.hash || '').replace(/^#/, '').trim();
+            const rawSearch = (location.search || '').replace(/^\?/, '').trim();
+            const isKeyValue = (raw) => raw.includes('=');
+
+            let token = (qp.get('t') || qp.get('token') || hp.get('t') || hp.get('token') || '').trim();
+            // Some QR generators/scanners use a bare hash like `.../index.html#magic`
+            if(!token && rawHash && !isKeyValue(rawHash)) token = rawHash;
+            if(!token && rawSearch && !isKeyValue(rawSearch) && !rawSearch.includes('&')) token = rawSearch;
+
+            // Token-based login (preferred)
             if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
               clearTokenFromUrl();
               setAuthAndRedirect();
               return;
             }
 
-            const auto = (qp.get('autologin') || hp.get('autologin') || '').trim();
-            if(auto !== '1' && auto.toLowerCase() !== 'true') return;
+            // Fallback: if someone encoded the password into the token field, allow it.
+            if(token && PASSWORDS.includes(token)){
+              passwordInput.value = token;
+              clearTokenFromUrl();
+              try {
+                if(typeof form.requestSubmit === 'function') form.requestSubmit();
+                else form.dispatchEvent(new Event('submit', { cancelable: true }));
+              } catch(e) {}
+              return;
+            }
 
-            const pw = (qp.get('p') || qp.get('pw') || qp.get('password') || hp.get('p') || hp.get('pw') || hp.get('password') || '').trim();
-            if(!pw) return;
+            // Password-based login
+            // If a password is explicitly provided, assume intent is to auto-login.
+            let pw = (qp.get('p') || qp.get('pw') || qp.get('password') || hp.get('p') || hp.get('pw') || hp.get('password') || '').trim();
+            if(!pw && rawHash && !isKeyValue(rawHash)) pw = rawHash;
+            if(!pw && rawSearch && !isKeyValue(rawSearch) && !rawSearch.includes('&')) pw = rawSearch;
+            if(!pw) {
+              // Keep backwards-compat: require explicit flag if no password provided.
+              const auto = (qp.get('autologin') || hp.get('autologin') || '').trim();
+              if(auto !== '1' && auto.toLowerCase() !== 'true') return;
+              return;
+            }
 
             passwordInput.value = pw;
             clearTokenFromUrl();
