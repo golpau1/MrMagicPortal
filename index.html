@@ -100,6 +100,7 @@
 
             if (PASSWORDS.includes(password)) {
               sessionStorage.setItem('authToken', 'ok');
+              try { localStorage.setItem('authToken', 'ok'); } catch(e) {}
               sessionStorage.setItem('claudeSonnet45', 'enabled');
               window.location.href = redirectPath;
             } else {

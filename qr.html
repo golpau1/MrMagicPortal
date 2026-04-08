@@ -54,10 +54,16 @@
         return (params.get('t') || params.get('token') || '').trim();
       }
 
-      const token = getHashToken();
+      function getQueryToken(){
+        const params = new URLSearchParams(location.search || '');
+        return (params.get('t') || params.get('token') || '').trim();
+      }
+
+      const token = getQueryToken() || getHashToken();
 
       if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
         sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
+        try { localStorage.setItem(AUTH_KEY, AUTH_VALUE); } catch(e) {}
         sessionStorage.setItem('claudeSonnet45','enabled');
         // Avoid leaving the token in history
         location.replace(HOMEPAGE);

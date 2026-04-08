@@ -35,6 +35,8 @@
       // Auth token guard
       const cfg = window.MRMAGIC_AUTH || {};
       const QR_ACCESS_TOKEN = String(cfg.QR_ACCESS_TOKEN || '');
+      const AUTH_KEY = String(cfg.AUTH_KEY || 'authToken');
+      const AUTH_VALUE = String(cfg.AUTH_VALUE || 'ok');
 
       function getHashToken(){
         const raw = (location.hash || '').replace(/^#/, '');
@@ -43,15 +45,42 @@
         return (params.get('t') || params.get('token') || '').trim();
       }
 
-      let token = sessionStorage.getItem('authToken');
+      function getQueryToken(){
+        const params = new URLSearchParams(location.search || '');
+        return (params.get('t') || params.get('token') || '').trim();
+      }
+
+      function getStoredAuth(){
+        const s = sessionStorage.getItem(AUTH_KEY);
+        if(s) return s;
+        try { return localStorage.getItem(AUTH_KEY) || ''; } catch(e) { return ''; }
+      }
+
+      function setAuth(){
+        sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
+        try { localStorage.setItem(AUTH_KEY, AUTH_VALUE); } catch(e) {}
+        sessionStorage.setItem('claudeSonnet45','enabled');
+      }
+
+      function clearTokenFromUrl(){
+        try {
+          // remove query params and hash token if present
+          history.replaceState(null, '', location.pathname);
+        } catch(e) {}
+      }
+
+      let token = getStoredAuth();
       if(!token){
-        const hashToken = getHashToken();
-        if(hashToken && QR_ACCESS_TOKEN && hashToken === QR_ACCESS_TOKEN){
-          sessionStorage.setItem('authToken', String(cfg.AUTH_VALUE || 'ok'));
-          sessionStorage.setItem('claudeSonnet45','enabled');
-          token = String(cfg.AUTH_VALUE || 'ok');
-          // Remove the token from the URL
-          try { history.replaceState(null, '', location.pathname + location.search); } catch(e) {}
+        const inboundToken = getQueryToken() || getHashToken();
+        if(inboundToken && QR_ACCESS_TOKEN && inboundToken === QR_ACCESS_TOKEN){
+          setAuth();
+          token = AUTH_VALUE;
+          clearTokenFromUrl();
+        }
+      } else {
+        // If auth exists in localStorage only, sync it into sessionStorage
+        if(!sessionStorage.getItem(AUTH_KEY)){
+          sessionStorage.setItem(AUTH_KEY, token);
         }
       }
 

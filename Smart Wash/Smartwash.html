@@ -33,7 +33,7 @@
 </head>
 <body>
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
-  <script>(function(){const t=sessionStorage.getItem('authToken');if(!t){window.location.href='../index.html';}})();</script>
+  <script>(function(){const k='authToken';const t=sessionStorage.getItem(k)||(function(){try{return localStorage.getItem(k);}catch(e){return ''}})();if(!t){window.location.href='../index.html';}else{if(!sessionStorage.getItem(k)) sessionStorage.setItem(k,t);}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
   <div class="page-controls" aria-label="Page and download controls" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:8px;padding:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-end">
     <div style="display:flex;gap:8px;align-items:center">
