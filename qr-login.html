@@ -4,12 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>QR Login</title>
-  <meta http-equiv="refresh" content="0; url=index.html#magic" />
+  <script src="auth-config.js"></script>
   <script>
-    window.location.replace('index.html#magic');
+    (function(){
+      const cfg = window.MRMAGIC_AUTH || {};
+      const authKey = String(cfg.AUTH_KEY || 'authToken');
+      const authValue = String(cfg.AUTH_VALUE || 'ok');
+      const redirectPath = String(cfg.REDIRECT_PATH || 'Homepage/homepage.html');
+
+      sessionStorage.setItem(authKey, authValue);
+      sessionStorage.setItem('claudeSonnet45', 'enabled');
+      try { localStorage.setItem(authKey, authValue); } catch(e) {}
+
+      window.location.replace(redirectPath);
+    })();
   </script>
 </head>
 <body>
-  Redirecting…
+  Redirecting to manuals…
 </body>
 </html>
