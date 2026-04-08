@@ -68,25 +68,9 @@
           const cfg = window.MRMAGIC_AUTH || {};
           const AUTH_KEY = String(cfg.AUTH_KEY || 'authToken');
           const AUTH_VALUE = String(cfg.AUTH_VALUE || 'ok');
-          const QR_ACCESS_TOKEN = String(cfg.QR_ACCESS_TOKEN || '');
           // Always use project-relative path so it works locally and online
           const redirectPath = String(cfg.REDIRECT_PATH || 'Homepage/homepage.html');
           const PASSWORDS = Array.isArray(cfg.PASSWORDS) && cfg.PASSWORDS.length ? cfg.PASSWORDS : ['magic','Magic'];
-
-          function getHashParams(){
-            const raw = (location.hash || '').replace(/^#/, '');
-            return new URLSearchParams(raw);
-          }
-
-          function getQueryParams(){
-            return new URLSearchParams(location.search || '');
-          }
-
-          function clearTokenFromUrl(){
-            try {
-              history.replaceState(null, '', location.pathname);
-            } catch(e) {}
-          }
 
           function setAuthAndRedirect(){
             sessionStorage.setItem(AUTH_KEY, AUTH_VALUE);
@@ -142,54 +126,6 @@
             }
             togglePassword.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
           });
-
-          // Optional auto-login (QR deep link):
-          // - Token mode (recommended): `?token=...` or `#token=...`
-          // - Password mode: `?password=...&autologin=1` or `#password=...&autologin=1`
-          (function tryAutoLogin(){
-            const qp = getQueryParams();
-            const hp = getHashParams();
-
-            const rawHash = (location.hash || '').replace(/^#/, '').trim();
-            const rawSearch = (location.search || '').replace(/^\?/, '').trim();
-            const isKeyValue = (raw) => raw.includes('=');
-
-            let token = (qp.get('t') || qp.get('token') || hp.get('t') || hp.get('token') || '').trim();
-            // Some QR generators/scanners use a bare hash like `.../index.html#magic`
-            if(!token && rawHash && !isKeyValue(rawHash)) token = rawHash;
-            if(!token && rawSearch && !isKeyValue(rawSearch) && !rawSearch.includes('&')) token = rawSearch;
-
-            // Token-based login (preferred)
-            if(token && QR_ACCESS_TOKEN && token === QR_ACCESS_TOKEN){
-              clearTokenFromUrl();
-              setAuthAndRedirect();
-              return;
-            }
-
-            // Fallback: if someone encoded the password into the token field, allow it.
-            if(token && PASSWORDS.includes(token)){
-              passwordInput.value = token;
-              clearTokenFromUrl();
-              handleLogin(token);
-              return;
-            }
-
-            // Password-based login
-            // If a password is explicitly provided, assume intent is to auto-login.
-            let pw = (qp.get('p') || qp.get('pw') || qp.get('password') || hp.get('p') || hp.get('pw') || hp.get('password') || '').trim();
-            if(!pw && rawHash && !isKeyValue(rawHash)) pw = rawHash;
-            if(!pw && rawSearch && !isKeyValue(rawSearch) && !rawSearch.includes('&')) pw = rawSearch;
-            if(!pw) {
-              // Keep backwards-compat: require explicit flag if no password provided.
-              const auto = (qp.get('autologin') || hp.get('autologin') || '').trim();
-              if(auto !== '1' && auto.toLowerCase() !== 'true') return;
-              return;
-            }
-
-            passwordInput.value = pw;
-            clearTokenFromUrl();
-            handleLogin(pw);
-          })();
 
           form.addEventListener('submit', (e)=>{
             e.preventDefault();

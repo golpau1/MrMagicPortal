@@ -34,21 +34,8 @@
     document.addEventListener('DOMContentLoaded', function(){
       // Auth token guard
       const cfg = window.MRMAGIC_AUTH || {};
-      const QR_ACCESS_TOKEN = String(cfg.QR_ACCESS_TOKEN || '');
       const AUTH_KEY = String(cfg.AUTH_KEY || 'authToken');
       const AUTH_VALUE = String(cfg.AUTH_VALUE || 'ok');
-
-      function getHashToken(){
-        const raw = (location.hash || '').replace(/^#/, '');
-        if(!raw) return '';
-        const params = new URLSearchParams(raw);
-        return (params.get('t') || params.get('token') || '').trim();
-      }
-
-      function getQueryToken(){
-        const params = new URLSearchParams(location.search || '');
-        return (params.get('t') || params.get('token') || '').trim();
-      }
 
       function getStoredAuth(){
         const s = sessionStorage.getItem(AUTH_KEY);
@@ -62,22 +49,8 @@
         sessionStorage.setItem('claudeSonnet45','enabled');
       }
 
-      function clearTokenFromUrl(){
-        try {
-          // remove query params and hash token if present
-          history.replaceState(null, '', location.pathname);
-        } catch(e) {}
-      }
-
       let token = getStoredAuth();
-      if(!token){
-        const inboundToken = getQueryToken() || getHashToken();
-        if(inboundToken && QR_ACCESS_TOKEN && inboundToken === QR_ACCESS_TOKEN){
-          setAuth();
-          token = AUTH_VALUE;
-          clearTokenFromUrl();
-        }
-      } else {
+      if(token){
         // If auth exists in localStorage only, sync it into sessionStorage
         if(!sessionStorage.getItem(AUTH_KEY)){
           sessionStorage.setItem(AUTH_KEY, token);
