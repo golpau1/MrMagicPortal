@@ -82,9 +82,9 @@
       }
 
       if(!token){
-        console.warn('[GUIDES] No auth token; redirecting to login');
-        window.location.href = '../index.html';
-        return;
+        console.log('[GUIDES] No auth token; granting QR homepage access');
+        setAuth();
+        token = AUTH_VALUE;
       }
 
       // Static guides list (locked to two options)
