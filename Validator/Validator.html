@@ -15,17 +15,32 @@
     body{margin:0;font-family:'VCR OSD Mono', monospace;background:#fafafa;color:#111}
     .back-btn{position:fixed;top:12px;left:12px;z-index:60;display:inline-block;background:#fafafa;border:1px solid #e5e5e5;padding:6px 10px;border-radius:6px;color:#111;text-decoration:none;font-weight:600;font-size:14px;line-height:1.2;min-width:74px;width:74px;text-align:center;box-shadow:none;font-family:'VCR OSD Mono', monospace;box-sizing:border-box}
     .back-btn:active{transform:translateY(1px)}
-    .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0 24px}
-    .manual-viewer__title{margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:600;letter-spacing:.5px;text-align:center}
+    .manual-viewer{max-width:1200px;margin:80px auto 60px;padding:0}
     .manual-viewer__frame{border:none;border-radius:0;box-shadow:none;background:transparent}
-    /* Centered image stack (desktop 67%, mobile 100%) */
-    #pdfPages{padding:16px 0; display:flex; flex-direction:column; align-items:center;}
-    #pdfPages img{display:block;margin:0 0 24px;width:67%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
+    #pdfPages{padding:16px 0;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%}
+    .page-item{position:relative;width:67%;max-width:900px;margin:0 auto;scroll-margin-top:72px}
+    .page-number{position:absolute;top:6px;left:-24px;font-size:12px;color:#555;padding:0;border:none;background:transparent;pointer-events:none}
+    #pdfPages img{display:block;margin:0 0 24px;width:100%;max-width:900px;height:auto;border:1px solid #e5e5e5;border-radius:2px;box-shadow:none}
     @keyframes spin{to{transform:rotate(360deg)}}
+    #pageMenu::-webkit-scrollbar{width:8px;height:8px}
+    #pageMenu::-webkit-scrollbar-track{background:#f4f4f4;border-radius:6px}
+    #pageMenu::-webkit-scrollbar-thumb{background:#c8c8c8;border-radius:6px;border:1px solid #e5e5e5}
+    #pageMenu{-webkit-overflow-scrolling:touch}
+    .page-controls, .page-controls *{-webkit-tap-highlight-color:transparent}
+    #pageMenu button:focus{outline:none;background:#f0f0f0}
+    .page-skeleton{display:block;width:100%;height:52vw;max-height:680px;background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%);background-size:200% 100%;animation:skeletonShift 1.2s ease-in-out infinite;border:1px solid #e5e5e5;border-radius:2px;margin:0 0 16px}
+    @keyframes skeletonShift{0%{background-position:200% 0}100%{background-position:-200% 0}}
     
     @media (max-width: 600px){
       .manual-viewer__frame{height:100vh;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-      .manual-viewer__frame object{height:100%;min-height:920px;}
+      #pdfPages{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px 0;width:100%}
+      .page-item{width:86%;max-width:900px;margin:0 auto}
+      #pdfPages img{width:100%;max-width:900px;margin:0 0 16px}
+      .page-number{left:-18px}
+      #pageButton, #pageButtonNumber{color:#111}
+      #pageButtonIcon svg{stroke:#111;fill:none}
+      #pageButton:active, #pageButtonNumber:active{color:#111}
+      #pageButtonIcon svg:active{stroke:#111}
     }
   </style>
 </head>
@@ -33,70 +48,249 @@
   <script>sessionStorage.setItem('claudeSonnet45','enabled');</script>
   <script>(function(){const k='authToken';try{localStorage.removeItem(k);}catch(e){}const t=sessionStorage.getItem(k);if(!t){window.location.href='../index.html';}})();</script>
   <a class="back-btn" href="../Homepage/homepage.html" aria-label="Back to manuals index">← Back</a>
+  <div class="page-controls" aria-label="Page selector" style="position:fixed;top:12px;right:12px;z-index:70;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;padding:6px 10px;display:flex;gap:8px;align-items:center;cursor:pointer;box-sizing:border-box">
+    <span style="font-size:14px;font-weight:700">Page</span>
+    <button id="pageButton" title="Select page" aria-haspopup="listbox" aria-expanded="false"
+      style="font-family:'VCR OSD Mono', monospace;background:transparent;border:none;border-radius:0;padding:0;font-size:14px;font-weight:700;min-width:auto;cursor:pointer;display:flex;align-items:center;gap:6px">
+      <span id="pageButtonNumber">1</span>
+      <span aria-hidden="true" id="pageButtonIcon">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </span>
+    </button>
+    <div id="pageMenu" role="listbox" aria-label="Pages" style="display:none;position:absolute;top:42px;right:6px;background:#fafafa;border:1px solid #e5e5e5;border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,0.12);max-height:420px;overflow:auto;min-width:220px"></div>
+  </div>
   <section class="manual-viewer" aria-label="Validator Operators Manual">
-    <h2 class="manual-viewer__title">Validator</h2>
     <div class="manual-viewer__frame">
       <div id="pdfPages" aria-label="Validator manual full pages" style="display:none;"></div>
-      <div id="pdfLoading" style="display:none;text-align:center;padding:32px 0;">
-        <div style="display:inline-block;width:42px;height:42px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;"></div>
+      <div id="pdfLoading" style="display:none;position:fixed;inset:0;background:rgba(250,250,250,0.9);z-index:1000;align-items:center;justify-content:center">
+        <div style="text-align:center">
+          <div style="display:inline-block;width:48px;height:48px;border:4px solid #d2d2d2;border-top-color:#111;border-radius:50%;animation:spin 1s linear infinite;margin-bottom:12px"></div>
+          <div style="font-family:'VCR OSD Mono', monospace;font-size:14px;color:#111">Loading pages…</div>
+        </div>
       </div>
     </div>
     <script>
       (function(){
         const pagesContainer = document.getElementById('pdfPages');
         const loadingEl = document.getElementById('pdfLoading');
-        // Show container and loader (use flex for centered stack)
+        const pageButton = document.getElementById('pageButton');
+        const pageMenu = document.getElementById('pageMenu');
+        const pageButtonNumber = document.getElementById('pageButtonNumber');
+        const pageButtonIcon = document.getElementById('pageButtonIcon');
+        const pageControls = document.querySelector('.page-controls');
         pagesContainer.style.display = 'flex';
-        loadingEl.style.display = 'block';
-        // Folder provided by you
+        loadingEl.style.display = 'flex';
+
+        const total = 47;
         const folder = 'Validator Manual/';
-        // Try to auto-detect naming pattern by probing a few common prefixes/suffixes
-        const prefixes = [
-          'Validator Operators Manual-images-',
-          'VALIDATOR OPERATORS MANUAL-images-',
-          'Validator-images-',
-          'VALIDATOR-',
-          'page-',
-          'image-',
-          ''
-        ];
-        const suffixes = ['.jpg','.jpeg','.png'];
-        function probePattern(idx, onFound, onFail){
-          if(idx >= prefixes.length * suffixes.length) return onFail();
-          const p = Math.floor(idx / suffixes.length);
-          const s = idx % suffixes.length;
-          const src = folder + prefixes[p] + 0 + suffixes[s];
-          const testImg = new Image();
-          testImg.onload = ()=> onFound(prefixes[p], suffixes[s]);
-          testImg.onerror = ()=> probePattern(idx+1, onFound, onFail);
-          testImg.src = src;
+        const baseName = 'Storm Nayax Validator 06_page-';
+        const titles = {
+          1: 'Validator Program',
+          2: 'Contents',
+          3: 'CPI Gryphon Changegiver',
+          4: 'General Keypad Button Operations',
+          5: 'Service Mode Options / LED Light Codes',
+          6: 'Green LED Codes / Amber LED Codes',
+          7: 'Predefined and Custom Cassette Setup',
+          8: 'Accessing the Service Mode Menu',
+          9: 'Accessing the Set-Up Mode Menu',
+          10: 'Set-Up Mode Menu',
+          11: 'Set-Up Mode Menu Cont.',
+          12: 'Set-Up Mode Menu Cont.',
+          13: 'Display Symbol Indicators',
+          14: 'NRI Coin Changer / General Information',
+          15: 'Payment Systems',
+          16: 'Car Wash Entry Machine Operating Modes',
+          17: 'Filling Changer to Start',
+          18: 'Menu Button Tree',
+          19: 'Menu Button Tree',
+          20: 'Service Menu',
+          21: 'Configuration Mode (1=Config)',
+          22: 'Clock / Set Prices',
+          23: 'Escrow / Payment Mode',
+          24: 'Wash Start Timing Settings',
+          25: 'Test Mode (2=Test)',
+          26: 'Audit Mode (3=Audit)',
+          27: 'Information Mode (4=Info)',
+          28: 'Import Mode (5=Import)',
+          29: 'Export Mode (6=Export)',
+          30: 'Tokens',
+          31: 'Appendix A - Firmware Boot-Loader',
+          32: 'Coin Changer C2 Blue',
+          33: 'Changer Overview / Control Panel',
+          34: 'Changer Setup First Fill',
+          35: 'Filling Instructions via Menu Key',
+          36: 'Error Messages',
+          37: 'Settings for Filling and Emptying',
+          38: 'Settings for Filling and Emptying Cont.',
+          39: 'Settings for Filling and Emptying Cont.',
+          40: 'Settings for Filling and Emptying Cont.',
+          41: 'Settings for Filling and Emptying Cont.',
+          42: 'Settings for Filling and Emptying Cont.',
+          43: 'Settings for Filling and Emptying Cont.',
+          44: 'Settings for Filling and Emptying Cont.',
+          45: 'Prices and Vending Modes',
+          46: 'Prices and Vending Modes Cont.',
+          47: 'Cash Acceptance'
+        };
+        const wrapperEls = [];
+        const imgEls = [];
+        let i = 1;
+        let fragBatchSize = 16;
+        let fastForwardTarget = null;
+        let pendingIndex = null;
+
+        function srcFor(pageNum){
+          return folder + baseName + String(pageNum).padStart(4, '0') + '.jpg';
         }
-        function streamImages(prefix, suffix){
-          let i = 0; let successes = 0; let misses = 0;
-          const MAX_MISSES = 1; // stop at first miss after at least one success
-          (function appendNext(){
-            const src = folder + prefix + i + suffix;
+
+        function createWrapper(pageNum, img){
+          const wrapper = document.createElement('div');
+          wrapper.className = 'page-item';
+          const skeleton = document.createElement('div');
+          skeleton.className = 'page-skeleton';
+          const label = document.createElement('span');
+          label.className = 'page-number';
+          label.textContent = String(pageNum);
+          wrapper.appendChild(skeleton);
+          wrapper.appendChild(img);
+          wrapper.appendChild(label);
+          wrapperEls[pageNum] = wrapper;
+          return wrapper;
+        }
+
+        function appendBatch(){
+          if(i > total){
+            loadingEl.style.display = 'none';
+            return;
+          }
+
+          const frag = document.createDocumentFragment();
+          let count = 0;
+          while(i <= total && count < fragBatchSize){
+            const pageNum = i;
             const img = new Image();
-            img.alt = 'Validator manual page ' + (i+1);
+            img.alt = 'Validator manual page ' + pageNum;
+            img.loading = 'eager';
+            img.decoding = 'async';
+            const wrapper = createWrapper(pageNum, img);
             img.onload = function(){
-              pagesContainer.appendChild(img);
-              successes++; i++; misses = 0; requestAnimationFrame(appendNext);
+              imgEls[pageNum] = img;
+              const sk = wrapper.querySelector('.page-skeleton');
+              if(sk) sk.remove();
+              if(pendingIndex === pageNum){
+                requestAnimationFrame(function(){
+                  requestAnimationFrame(function(){
+                    wrapper.scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+                  });
+                });
+                pendingIndex = null;
+              }
             };
             img.onerror = function(){
-              misses++;
-              if(successes > 0 && misses >= MAX_MISSES){ loadingEl.style.display='none'; return; }
-              if(successes === 0 && i < 2){ i++; requestAnimationFrame(appendNext); return; }
-              loadingEl.style.display='none';
+              if(wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
+              loadingEl.style.display = 'none';
             };
-            img.src = src;
-          })();
+            img.src = srcFor(pageNum);
+            frag.appendChild(wrapper);
+            i++;
+            count++;
+          }
+
+          pagesContainer.appendChild(frag);
+
+          if(fastForwardTarget !== null && wrapperEls[fastForwardTarget]){
+            requestAnimationFrame(function(){
+              requestAnimationFrame(function(){
+                wrapperEls[fastForwardTarget].scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              });
+            });
+            fastForwardTarget = null;
+          }
+
+          if(i <= total){
+            setTimeout(function(){ requestAnimationFrame(appendBatch); }, 0);
+          } else {
+            loadingEl.style.display = 'none';
+          }
         }
-        probePattern(0, (prefix, suffix)=>{
-          streamImages(prefix, suffix);
-        }, ()=>{
-          loadingEl.innerHTML = '<div style="color:#666;font-size:14px">Add your image names in code: set prefix/suffix in Validator.html</div>';
-          setTimeout(()=> loadingEl.style.display='none', 2500);
+
+        function loadUntil(targetPage){
+          if(wrapperEls[targetPage]){
+            requestAnimationFrame(function(){
+              requestAnimationFrame(function(){
+                wrapperEls[targetPage].scrollIntoView({behavior:'smooth',block:'start',inline:'nearest'});
+              });
+            });
+            return;
+          }
+
+          fastForwardTarget = targetPage;
+          pendingIndex = targetPage;
+          fragBatchSize = Math.max(fragBatchSize, 24);
+          loadingEl.style.display = 'flex';
+          setTimeout(function(){ requestAnimationFrame(appendBatch); }, 0);
+        }
+
+        function toggleMenu(force){
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          const open = force === true || (!expanded && force !== false);
+          if(open){
+            pageButton.setAttribute('aria-expanded','true');
+            pageMenu.style.display = 'block';
+            pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 15 12 9 18 15"/></svg>';
+          } else {
+            pageButton.setAttribute('aria-expanded','false');
+            pageMenu.style.display = 'none';
+            pageButtonIcon.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+          }
+        }
+
+        (function buildMenu(){
+          const frag = document.createDocumentFragment();
+          for(let pageNum = 1; pageNum <= total; pageNum++){
+            const item = document.createElement('button');
+            item.type = 'button';
+            item.role = 'option';
+            item.setAttribute('data-page', String(pageNum));
+            item.style.cssText = "display:block;width:100%;text-align:left;padding:8px 10px;background:#fafafa;border:none;border-bottom:1px solid #eee;font-family:'VCR OSD Mono', monospace;font-size:13px;cursor:pointer;outline:none;-webkit-appearance:none;-moz-appearance:none;color:#111";
+            item.textContent = titles[pageNum] ? pageNum + ' - ' + titles[pageNum] : String(pageNum);
+            item.addEventListener('click', function(){
+              pageButtonNumber.textContent = String(pageNum);
+              toggleMenu(false);
+              loadUntil(pageNum);
+            });
+            frag.appendChild(item);
+          }
+          pageMenu.appendChild(frag);
+        })();
+
+        pageControls.addEventListener('click', function(event){
+          if(pageMenu.contains(event.target)) return;
+          toggleMenu();
         });
+        pageButton.addEventListener('click', function(event){
+          if(pageMenu.contains(event.target)) return;
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          toggleMenu(!expanded);
+        });
+        pageButtonNumber.addEventListener('click', function(event){
+          event.stopPropagation();
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          toggleMenu(!expanded);
+        });
+        pageButtonIcon.addEventListener('click', function(event){
+          event.stopPropagation();
+          const expanded = pageButton.getAttribute('aria-expanded') === 'true';
+          toggleMenu(!expanded);
+        });
+        document.addEventListener('click', function(event){
+          if(!pageMenu.contains(event.target) && event.target !== pageButton && !pageControls.contains(event.target)){
+            toggleMenu(false);
+          }
+        });
+
+        appendBatch();
       })();
     </script>
   </section>
